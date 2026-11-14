@@ -24,7 +24,7 @@ Break the Agent (AfterQuery)
 
 **Calibration.** Scripted anchors use the same functions, time and information as the agent: reference, reactive pharmacist (repairs shortages after they happen), SOP checklist, central-store-only, do-nothing, stop-early, and per-task exploit probes (withdraw everything, discard all refrigerated stock, approve the restricted alternative ward-wide, grant every request). Pass threshold = midpoint of the reference and the best other honest anchor. The calibration gates (ordering, judgment gap, threshold margin, exploit suppression, stopping early below the threshold) pass on every seed of every task.
 
-**Result.** DeepSeek V4.1 Flash, 25 runs (5 tasks x 3 seeds plus 2 repeats of one seed per task): **below the reference in 25/25, below the pass threshold in 22/25.** Mean scores: T1 0.70, T2 0.48, T3 0.73, T4 0.27, T5 0.65. Every trajectory replays to the exact recorded score.
+**Result.** DeepSeek V4.1 Flash, 25 runs (5 tasks x 3 seeds plus 2 repeats of one seed per task): **below the reference in 25/25, below the pass threshold in 22/25.** Mean scores: T1 0.70, T2 0.48, T3 0.73, T4 0.27, T5 0.65. A stronger model, Kimi K3.1 Pro (one run per task), is below the reference on all five tasks and below the threshold on four. Every trajectory replays to the exact recorded score.
 
 **Failure modes:**
 1. *Investigates before it withdraws.* The issue log already shows where a recalled batch went; the model inspects cabinets one by one, runs out of desk time and defers the quarantine. Recalled units reached patients in every T1 and T5 run (10-89 per run; reference 0-3). One handover note opens "URGENT - CLASS II RECALL NOT YET ACTIONED (ran out of desk time)".

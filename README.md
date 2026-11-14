@@ -22,7 +22,8 @@ task (C1).
 | below the pass threshold | 5/5 | 5/5 | 2/5 | 5/5 | 5/5 |
 
 **25/25 runs score below the scripted reference pharmacist; 22/25 score below the pass
-threshold.** Every run replays to the exact recorded score.
+threshold.** A second, stronger model, Kimi K3.1 Pro, scores below the reference on all five
+tasks (seed 0) and below the threshold on four. Every run replays to the exact recorded score.
 
 ```bash
 python3 -m pharmacy_env.eval        # one command, no API key, standard library only
@@ -152,7 +153,21 @@ temperature 0, reasoning effort none, handover notes). Score / pass threshold:
 | T4 | 0.13, 0.15, 0.34 / 0.71 | 0.35 / 0.79 | 0.37 / 0.79 |
 | T5 | 0.82, 0.49, 0.65 / 0.89 | 0.70 / 0.86 | 0.58 / 0.92 |
 
-The runs used 23.5 million input tokens in total (0.4-1.8 million per run). On T2 and T5 the
+**Second model.** Kimi K3.1 Pro (`kimi-k3-1-pro`, same endpoint, reasoning effort low), one run per
+task on seed 0:
+
+| | T1 | T2 | T3 | T4 | T5 |
+|---|---|---|---|---|---|
+| Kimi K3.1 Pro | 0.95 | 0.56 | 0.59 | **0.84** | 0.84 |
+| pass threshold | 1.00 | 0.82 | 0.80 | 0.71 | 0.89 |
+| DeepSeek V4.1 Flash, seed 0 mean | 0.62 | 0.49 | 0.74 | 0.21 | 0.65 |
+
+Kimi is below the reference on all five tasks and below the threshold on four; it passes T4,
+where it supplies the genuine surges far better than DeepSeek. It handles recalls better (no
+recalled unit reached a patient in T1), but in T5 24 recalled units still did. The five Kimi runs
+used 2.0 million input tokens.
+
+The DeepSeek runs used 23.5 million input tokens in total (0.4-1.8 million per run). On T2 and T5 the
 model also scores below the reactive anchor (a script that only repairs shortages after they
 happen) in 4 of 5 runs, and on T1 and T4 in every run.
 
@@ -191,7 +206,12 @@ threshold in two runs, but norepinephrine ran short in the second week in every 
 **5. Desk time spent re-establishing context.** Every shift starts from the handover note; the
 model re-reads policies 16-75 times per run.
 
-**What it gets right.** It never quarantines usable stock, ignores distractor mail including a
+**Kimi's distinct failure (T1).** After the central freeze, Kimi withdrew every refrigerated
+batch in the central store, including the two deliveries that arrived after the excursion and
+were never frozen: 118 usable units of insulin, oxytocin and suxamethonium withdrawn. It also left
+frozen stock that had moved to wards, and 4 damaged units reached patients.
+
+**What DeepSeek gets right.** It never quarantines usable stock, ignores distractor mail including a
 recall for a presentation the hospital does not stock, refuses every reserve request in T4, and in
 four of five T2 runs approves the restricted alternative only patient by patient.
 
@@ -258,7 +278,7 @@ token usage, endpoint and settings.
 | `pharmacy_env/analyze.py` | Tags failure modes in a trajectory |
 | `pharmacy_env/run_agent.py` | Agent harness for OpenAI-compatible APIs |
 | `pharmacy_env/run_claude.py` | Agent harness for Claude (Anthropic SDK) |
-| `results/trajectories/` | The 25 model runs reported above |
+| `results/trajectories/` | The 30 model runs reported above (25 DeepSeek, 5 Kimi) |
 | `results/eval_output.txt` | Output of `python3 -m pharmacy_env.eval` |
 | `tests/test_env.py` | Determinism, gates, harness and replay, batch tracing, allergies, cold chain, supply channels |
 
@@ -287,8 +307,9 @@ threshold on a two-week task), v3 (batch tracing and allergies), v4 (five tasks)
 
 ## Limitations
 
-- **One model.** All 25 runs are DeepSeek V4.1 Flash. Earlier versions of the environment were run
-  with Gemini 3.5 Flash with the same pattern, but those runs do not replay on the current world.
+- **Two models, uneven coverage.** 25 runs of DeepSeek V4.1 Flash and 5 of Kimi K3.1 Pro (seed 0
+  only). Earlier versions of the environment were run with Gemini 3.5 Flash with the same pattern,
+  but those runs do not replay on the current world.
 - **T3 is the weakest task for the gap.** The model passes the threshold in two of five runs while
   staying below the reference in all five.
 - **Same-seed variation.** Repeated runs on one seed vary (T3 0.63-0.94), even at temperature 0; the
