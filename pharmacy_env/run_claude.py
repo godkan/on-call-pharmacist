@@ -39,7 +39,7 @@ def cost(model, u):
             + u["cache_read_input_tokens"] * p[2] + u["output_tokens"] * p[3]) / 1e6
 
 
-def run(task_id, seed, model, effort, out_path, max_steps=400, max_nudges=2):
+def run(task_id, seed, model, effort, out_path, max_steps=2000, max_nudges=2):
     # Pin the public endpoint: never inherit a base URL from the environment.
     client = anthropic.Anthropic(api_key=os.environ["ANTHROPIC_API_KEY"],
                                  base_url="https://api.anthropic.com", max_retries=6, timeout=600)

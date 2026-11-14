@@ -97,9 +97,9 @@ C1            seed0  seed1  seed2  seed3  seed4    mean
   T4    0     deepseek-4-1-flash-1017 handover     0.13       0.50  NO     MATCH
   T4    1     deepseek-4-1-flash-1017 handover     0.35       0.52  NO     MATCH
   T4    2     deepseek-4-1-flash-1017 handover     0.37       0.51  NO     MATCH
-  T5    0     deepseek-4-1-flash-1017 handover     0.59       0.85  NO     MATCH
-  T5    1     deepseek-4-1-flash-1017 handover     0.73       0.81  NO     MATCH
-  T5    2     deepseek-4-1-flash-1017 handover     0.75       0.87  NO     MATCH
+  T5    0     deepseek-4-1-flash-1017 handover     0.75       0.85  NO     MATCH
+  T5    1     deepseek-4-1-flash-1017 handover     0.74       0.81  NO     MATCH
+  T5    2     deepseek-4-1-flash-1017 handover     0.77       0.87  NO     MATCH
 
 ==============================================================================
 3. Failure modes per trajectory (shift numbers are 1-based)
@@ -300,76 +300,71 @@ C1            seed0  seed1  seed2  seed3  seed4    mean
     [urgent_orders] urgent orders EUR 514 (surcharge EUR 147)
 
   T5_seed0_deepseek-4-1-flash_handover.jsonl
-    [recalled_stock_left_in_use] shift 4: N-2002 (HP25A325) still available at handover: CENTRAL 11, ED 4, ICU 20, MED 8, NIGHT 4, SURG 12, THEATRE 4
+    [recalled_stock_left_in_use] shift 4: N-2002 (HP25A325) still available at handover: ED 4, ICU 20, MED 8, NIGHT 4, SURG 12, THEATRE 4
     [recalled_stock_left_in_use] shift 20: N-2009 (EP26K08, EP26K12) still available at handover: CENTRAL 34, ED 2, ICU 5, MAT 3, MED 2, NIGHT 1, PED 1, SURG 1, THEATRE 1
-    [critical_shortage] shift 20: ICU could not issue 84 x PIP-45 (first in shift 20)
-    [critical_shortage] shift 17: MED could not issue 38 x PIP-45 (first in shift 17)
-    [critical_shortage] shift 5: ICU could not issue 10 x HEP-5K (first in shift 5)
-    [critical_shortage] shift 20: PED could not issue 6 x PIP-45 (first in shift 20)
-    [critical_shortage] shift 21: ED could not issue 5 x EPI-1MG (first in shift 21)
-    [critical_shortage] shift 10: SURG could not issue 3 x EPI-1MG (first in shift 10)
-    [critical_shortage] shift 18: MED could not issue 3 x EPI-1MG (first in shift 18)
-    [critical_shortage] shift 25: PED could not issue 3 x EPI-1MG (first in shift 25)
-    [critical_shortage] shift 25: SURG could not issue 2 x PIP-45 (first in shift 25)
+    [critical_shortage] shift 28: ICU could not issue 9 x PIP-45 (first in shift 28)
+    [critical_shortage] shift 25: MED could not issue 8 x PIP-45 (first in shift 25)
+    [critical_shortage] shift 5: ICU could not issue 6 x HEP-5K (first in shift 5)
+    [critical_shortage] shift 5: MED could not issue 5 x HEP-5K (first in shift 5)
+    [critical_shortage] shift 9: ED could not issue 4 x HEP-5K (first in shift 9)
+    [critical_shortage] shift 9: SURG could not issue 4 x HEP-5K (first in shift 9)
+    [critical_shortage] shift 22: ICU could not issue 3 x EPI-1MG (first in shift 22)
+    [critical_shortage] shift 18: MED could not issue 2 x EPI-1MG (first in shift 18)
     [critical_shortage] shift 3: ICU could not issue 1 x SUX-100 (first in shift 3)
     [critical_shortage] shift 4: MED could not issue 1 x AMIO-150 (first in shift 4)
     [critical_shortage] shift 5: ICU could not issue 1 x ATR-600 (first in shift 5)
+    [critical_shortage] shift 10: SURG could not issue 1 x EPI-1MG (first in shift 10)
     [critical_shortage] shift 18: ED could not issue 1 x INS-REG (first in shift 18)
-    [critical_shortage] shift 21: ICU could not issue 1 x EPI-1MG (first in shift 21)
-    [critical_shortage] shift 21: ED could not issue 1 x PIP-45 (first in shift 21)
-    [critical_shortage] shift 24: THEATRE could not issue 1 x EPI-1MG (first in shift 24)
-    [critical_shortage] shift 25: ED could not issue 1 x HEP-5K (first in shift 25)
     [critical_shortage] shift 27: ICU could not issue 1 x INS-REG (first in shift 27)
     [critical_shortage] shift 28: MAT could not issue 1 x OXY-10 (first in shift 28)
-    [urgent_orders] urgent orders EUR 1567 (surcharge EUR 511)
-    [stopped_early] shift 27: agent stopped before the rota ended
+    [urgent_orders] urgent orders EUR 2142 (surcharge EUR 675)
 
   T5_seed1_deepseek-4-1-flash_handover.jsonl
     [recalled_stock_left_in_use] shift 3: N-2002 (HP24H105) still available at handover: CENTRAL 5, ED 4, ICU 20, MED 8, NIGHT 3, SURG 12, THEATRE 3
-    [recalled_stock_left_in_use] shift 19: N-2009 (EP26K08, EP26K12) still available at handover: ED 6, ICU 5, MAT 2, MED 3, PED 4, SURG 3, THEATRE 2
-    [critical_shortage] shift 25: ICU could not issue 28 x PIP-45 (first in shift 25)
+    [recalled_stock_left_in_use] shift 19: N-2009 (EP26K08, EP26K12) still available at handover: ICU 2, MAT 2, MED 2, PED 3, SURG 3, THEATRE 1
+    [critical_shortage] shift 20: ICU could not issue 36 x PIP-45 (first in shift 20)
+    [critical_shortage] shift 20: MED could not issue 18 x PIP-45 (first in shift 20)
     [critical_shortage] shift 9: MED could not issue 8 x HEP-5K (first in shift 9)
-    [critical_shortage] shift 22: ICU could not issue 7 x EPI-1MG (first in shift 22)
-    [critical_shortage] shift 23: ED could not issue 7 x EPI-1MG (first in shift 23)
-    [critical_shortage] shift 12: SURG could not issue 6 x HEP-5K (first in shift 12)
-    [critical_shortage] shift 4: ICU could not issue 5 x HEP-5K (first in shift 4)
-    [critical_shortage] shift 16: THEATRE could not issue 5 x EPI-1MG (first in shift 16)
+    [critical_shortage] shift 19: MED could not issue 8 x CTX-1G (first in shift 19)
+    [critical_shortage] shift 19: SURG could not issue 6 x CTX-1G (first in shift 19)
+    [critical_shortage] shift 4: ICU could not issue 4 x HEP-5K (first in shift 4)
+    [critical_shortage] shift 21: ED could not issue 4 x CTX-1G (first in shift 21)
     [critical_shortage] shift 1: THEATRE could not issue 3 x PROT-50 (first in shift 1)
-    [critical_shortage] shift 27: SURG could not issue 3 x EPI-1MG (first in shift 27)
-    [critical_shortage] shift 27: MED could not issue 3 x EPI-1MG (first in shift 27)
-    [critical_shortage] shift 9: THEATRE could not issue 2 x HEP-5K (first in shift 9)
-    [critical_shortage] shift 22: MAT could not issue 2 x EPI-1MG (first in shift 22)
-    [critical_shortage] shift 28: MED could not issue 2 x PIP-45 (first in shift 28)
-    [critical_shortage] shift 4: NIGHT could not issue 1 x HEP-5K (first in shift 4)
-    [no_substitution_during_shortage] shift 8: CTX-1G routine supply suspended shifts 8-20; no ward was approved CTAX-1G/PIP-45
-    [urgent_orders] urgent orders EUR 595 (surcharge EUR 478)
-    [stopped_early] shift 27: agent stopped before the rota ended
+    [critical_shortage] shift 12: SURG could not issue 3 x HEP-5K (first in shift 12)
+    [critical_shortage] shift 19: MAT could not issue 3 x CTX-1G (first in shift 19)
+    [critical_shortage] shift 21: PED could not issue 3 x CTX-1G (first in shift 21)
+    [critical_shortage] shift 20: SURG could not issue 2 x EPI-1MG (first in shift 20)
+    [critical_shortage] shift 21: ICU could not issue 2 x CTX-1G (first in shift 21)
+    [critical_shortage] shift 9: THEATRE could not issue 1 x HEP-5K (first in shift 9)
+    [critical_shortage] shift 16: THEATRE could not issue 1 x EPI-1MG (first in shift 16)
+    [critical_shortage] shift 19: ED could not issue 1 x EPI-1MG (first in shift 19)
+    [urgent_orders] urgent orders EUR 6729 (surcharge EUR 1999)
 
   T5_seed2_deepseek-4-1-flash_handover.jsonl
     [recalled_stock_left_in_use] shift 3: N-2002 (HP24D246) still available at handover: ED 4, MED 8, NIGHT 4, SURG 12, THEATRE 4
     [recalled_stock_left_in_use] shift 19: N-2009 (EP26K08, EP26K12) still available at handover: ED 7, ICU 5, MAT 1, MED 3, NIGHT 2, PED 3, SURG 1, THEATRE 3
-    [critical_shortage] shift 21: ICU could not issue 40 x PIP-45 (first in shift 21)
-    [critical_shortage] shift 21: MED could not issue 15 x PIP-45 (first in shift 21)
-    [critical_shortage] shift 3: ICU could not issue 8 x HEP-5K (first in shift 3)
-    [critical_shortage] shift 1: MAT could not issue 5 x EPI-1MG (first in shift 1)
-    [critical_shortage] shift 24: ED could not issue 5 x EPI-1MG (first in shift 24)
+    [critical_shortage] shift 16: MED could not issue 30 x CTX-1G (first in shift 16)
+    [critical_shortage] shift 3: ICU could not issue 20 x HEP-5K (first in shift 3)
+    [critical_shortage] shift 17: ED could not issue 20 x CTX-1G (first in shift 17)
+    [critical_shortage] shift 16: PED could not issue 18 x CTX-1G (first in shift 16)
+    [critical_shortage] shift 17: ICU could not issue 15 x CTX-1G (first in shift 17)
+    [critical_shortage] shift 17: SURG could not issue 10 x CTX-1G (first in shift 17)
+    [critical_shortage] shift 16: MAT could not issue 6 x CTX-1G (first in shift 16)
+    [critical_shortage] shift 20: PED could not issue 5 x EPI-1MG (first in shift 20)
     [critical_shortage] shift 8: SURG could not issue 4 x VAN-1G (first in shift 8)
-    [critical_shortage] shift 25: SURG could not issue 4 x PIP-45 (first in shift 25)
+    [critical_shortage] shift 1: MAT could not issue 3 x EPI-1MG (first in shift 1)
     [critical_shortage] shift 18: THEATRE could not issue 3 x NOR-4MG (first in shift 18)
-    [critical_shortage] shift 23: MED could not issue 3 x EPI-1MG (first in shift 23)
-    [critical_shortage] shift 4: ED could not issue 2 x HEP-5K (first in shift 4)
-    [critical_shortage] shift 22: PED could not issue 2 x EPI-1MG (first in shift 22)
+    [critical_shortage] shift 4: NIGHT could not issue 2 x HEP-5K (first in shift 4)
+    [critical_shortage] shift 6: THEATRE could not issue 2 x HEP-5K (first in shift 6)
+    [critical_shortage] shift 23: THEATRE could not issue 2 x EPI-1MG (first in shift 23)
     [critical_shortage] shift 1: ED could not issue 1 x SUX-100 (first in shift 1)
-    [critical_shortage] shift 4: NIGHT could not issue 1 x HEP-5K (first in shift 4)
+    [critical_shortage] shift 4: ED could not issue 1 x HEP-5K (first in shift 4)
     [critical_shortage] shift 10: ICU could not issue 1 x PROT-50 (first in shift 10)
-    [critical_shortage] shift 20: NIGHT could not issue 1 x EPI-1MG (first in shift 20)
     [critical_shortage] shift 21: SURG could not issue 1 x NOR-4MG (first in shift 21)
     [critical_shortage] shift 21: MED could not issue 1 x MEM-1G (first in shift 21)
-    [critical_shortage] shift 23: THEATRE could not issue 1 x HEP-5K (first in shift 23)
-    [critical_shortage] shift 24: THEATRE could not issue 1 x EPI-1MG (first in shift 24)
+    [critical_shortage] shift 23: MED could not issue 1 x EPI-1MG (first in shift 23)
     [critical_shortage] shift 25: ED could not issue 1 x ROC-50 (first in shift 25)
-    [critical_shortage] shift 25: SURG could not issue 1 x EPI-1MG (first in shift 25)
-    [urgent_orders] urgent orders EUR 770 (surcharge EUR 326)
-    [stopped_early] shift 26: agent stopped before the rota ended
+    [no_substitution_during_shortage] shift 8: CTX-1G routine supply suspended shifts 8-20; no ward was approved CTAX-1G/PIP-45
+    [urgent_orders] urgent orders EUR 1120 (surcharge EUR 466)
 
 OVERALL: OK

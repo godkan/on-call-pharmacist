@@ -141,7 +141,7 @@ def shift_start_message(env, memory):
     return "Your rota starts now: %s." % env.shift_label(0)
 
 
-def run(task_id, seed, model, base, key, out_path, temperature=0.0, max_steps=600, max_nudges=2, memory="full"):
+def run(task_id, seed, model, base, key, out_path, temperature=0.0, max_steps=2000, max_nudges=2, memory="full"):
     env = Env(TASKS[task_id](seed))
     sysmsg = {"role": "system", "content": system_prompt(env, memory)}
     messages = [sysmsg, {"role": "user", "content": shift_start_message(env, memory)}]
@@ -188,6 +188,7 @@ def run(task_id, seed, model, base, key, out_path, temperature=0.0, max_steps=60
             min(env.shift + 1, env.n_shifts), env.n_shifts, steps, usage["prompt_tokens"]), flush=True)
     return finish(env, task_id, seed, log, steps, usage,
                   {"model": model, "temperature": temperature, "memory": memory, "base_url": base,
+                   "max_steps": max_steps,
                    "reasoning_effort": os.environ.get("LLM_REASONING_EFFORT")})
 
 
@@ -241,6 +242,8 @@ def main():
     ap.add_argument("--seed", type=int, default=0)
     ap.add_argument("--out", default="results/traj")
     ap.add_argument("--temperature", type=float, default=0.0)
+    ap.add_argument("--max-steps", type=int, default=2000,
+                    help="safety cap on tool calls per run (desk time already limits each shift)")
     ap.add_argument("--memory", choices=["full", "handover"], default="full",
                     help="full: whole conversation; handover: each shift sees only the previous handover note")
     ap.add_argument("--list-models", action="store_true", help="print model ids the API offers and exit")
@@ -253,7 +256,7 @@ def main():
     model = os.environ["LLM_MODEL"]
     os.makedirs(a.out, exist_ok=True)
     path = os.path.join(a.out, "%s_seed%d_%s_%s_%d.jsonl" % (a.task, a.seed, model.replace("/", "_"), a.memory, int(time.time())))
-    s = run(a.task, a.seed, model, base, key, path, a.temperature, memory=a.memory)
+    s = run(a.task, a.seed, model, base, key, path, a.temperature, max_steps=a.max_steps, memory=a.memory)
     print(json.dumps({k: s[k] for k in ("task", "seed", "model", "score", "penalty", "tool_calls",
                                         "stopped_early", "usage")}, indent=1))
     print("trajectory:", path)
