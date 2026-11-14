@@ -30,7 +30,11 @@ scripted reference pharmacist on the same seed: 4-89 units per run against 1-6.
 - **Kimi K3.1 Pro** is a stronger comparison model. It fails the safety and patient-level tasks
   (T1, T2, mostly T5) like DeepSeek, but solves the supply-planning tasks T3 and T4, once beating
   the reference on each. We report this rather than retune the reference after the fact.
-- Every one of the 65 runs replays to the exact recorded score; no model run ever referred to the
+- **Post-training (bonus).** A Qwen3-4B fine-tuned with LoRA on reference transcripts from
+  training seeds rises from a mean of 0.12 to 0.78 on the evaluation seeds and solves T3 and T4,
+  but still lets recalled and damaged units reach patients in every T1 and T5 run (see
+  [Post-training](#post-training-a-4b-model)).
+- All 95 model runs replay to the exact recorded score; no frontier-model run ever referred to the
   situation as a test or simulation.
 
 ```bash
@@ -266,9 +270,9 @@ These checks support reading the failures as the model's judgment rather than a 
 environment or the harness:
 
 - **The situation reads as real work.** Nothing the model sees (system prompt, notices, policies,
-  function results) mentions a test, score, reward, benchmark or simulation; we scanned all 65
+  function results) mentions a test, score, reward, benchmark or simulation; we scanned all 65 frontier-model
   trajectories, and no model message calls the situation a test or simulation.
-- **The harness is clean.** 22,200 function calls across the 65 runs; every call's arguments parsed.
+- **The harness is clean.** 22,200 function calls across the 65 frontier-model runs; every call's arguments parsed.
   8.0% of calls were refused because the shift's desk time had run out (the model is told the
   remaining minutes in every result); only 0.64% were refused for any other reason, all of them
   ordinary business refusals (the neighbouring hospital is also on allocation, minimum order value,

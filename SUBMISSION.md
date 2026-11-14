@@ -24,7 +24,7 @@ Break the Agent (AfterQuery)
 
 **Calibration.** Scripted anchors use the same functions, time and information as the agent: reference, reactive pharmacist (repairs shortages after they happen), SOP checklist, central-store-only, do-nothing, stop-early, and per-task exploit probes (withdraw everything, discard all refrigerated stock, approve the restricted alternative ward-wide, grant every request, hoard every critical medicine). Pass threshold = midpoint of the reference and the best other honest anchor. The calibration gates (ordering, judgment gap, threshold margin, exploit suppression, stopping early below the threshold) pass on every seed of every task.
 
-**Result.** DeepSeek V4.1 Flash, 40 runs (5 tasks x 3 seeds plus 2 repeats of seed 0 with reasoning off; 5 tasks x 3 seeds with reasoning effort high): **below the reference in 40/40, below the pass threshold in 35/40.** Kimi K3.1 Pro (25 runs, a stronger comparison model) is below the threshold in all 10 runs of T1 and T2 and 4 of 5 of T5, but solves the supply-planning tasks T3 and T4 in 8 of 10 runs. Patient safety without normalisation: in all 26 runs of the incident tasks T1 and T5, every model let more recalled or temperature-damaged units reach patients than the reference on the same seed (4-89 per run against 1-6). Every trajectory replays to the exact recorded score.
+**Result.** DeepSeek V4.1 Flash, 40 runs (5 tasks x 3 seeds plus 2 repeats of seed 0 with reasoning off; 5 tasks x 3 seeds with reasoning effort high): **below the reference in 40/40, below the pass threshold in 35/40.** Kimi K3.1 Pro (25 runs, a stronger comparison model) is below the threshold in all 10 runs of T1 and T2 and 4 of 5 of T5, but solves the supply-planning tasks T3 and T4 in 8 of 10 runs. Patient safety without normalisation: in all 26 runs of the incident tasks T1 and T5, every model let more recalled or temperature-damaged units reach patients than the reference on the same seed (4-89 per run against 1-6). **Post-training (bonus):** Qwen3-4B fine-tuned with LoRA on reference transcripts from training seeds (eval seeds excluded) rises from a mean score of 0.12 to 0.78 and solves T3 and T4, but recalled and damaged units still reached patients in every T1 and T5 run. Every trajectory replays to the exact recorded score.
 
 **Failure modes:**
 1. *Investigates before it withdraws.* The issue log already shows where a recalled batch went; the model inspects cabinets one by one, runs out of desk time and defers the quarantine. Recalled units reached patients in every T1 and T5 run with reasoning off (10-89 per run; reference 0-6). One handover note opens "URGENT - CLASS II RECALL NOT YET ACTIONED (ran out of desk time)".
@@ -42,10 +42,10 @@ All information needed to do better is available through the functions; the refe
 
 ## Links still needed
 
-- Source Code: GitHub repository URL
+- Source Code: https://github.com/godkan/on-call-pharmacist
 - Video: optional demo recording
 - Presentation: optional slides
 
 ## Tech challenges
 
-The model runs used Verda's inference API, which fits the "Verda Compute Track" tech challenge (prizes are cloud credits). If entered, say so in the description: "All 65 agent runs used Verda's OpenAI-compatible inference API (DeepSeek V4.1 Flash and Kimi K3.1 Pro)."
+The model runs used Verda's inference API, which fits the "Verda Compute Track" tech challenge (prizes are cloud credits). If entered, say so in the description: "All 65 frontier-model runs used Verda's OpenAI-compatible inference API (DeepSeek V4.1 Flash and Kimi K3.1 Pro), and the Qwen3-4B LoRA fine-tune ran on a Verda H100."
