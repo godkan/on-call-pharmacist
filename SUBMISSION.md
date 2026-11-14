@@ -6,7 +6,7 @@ On-Call Pharmacist
 
 ## Punchline (max 200)
 
-A two-week hospital pharmacy rota where a frontier agent lets recalled vials reach patients because it investigates before it acts, and reads the flu warning without ordering ahead.
+A hospital pharmacy where a frontier agent lets recalled vials reach patients because it investigates before it acts, in all 25 runs scoring below a scripted pharmacist.
 
 ## Challenge
 
@@ -14,36 +14,38 @@ Break the Agent (AfterQuery)
 
 ## Description (max 5000, markdown)
 
-**On-Call Pharmacist** is a reinforcement learning environment in which an agent works a two-week rota (28 shifts) as the on-duty pharmacist of a fictional regional hospital. Medicines are tracked by batch across a central store and five ward cabinets, but cabinets record only products and quantities: to find a recalled batch the agent must read the central issue log or inspect cabinets on site. 65 patients receive ceftriaxone, some with penicillin allergies, and one formulary alternative is contraindicated for them. The agent acts through 15 hospital-system functions under 120 minutes of desk time per shift, and each shift sees only the previous shift's handover note.
+**On-Call Pharmacist** is a reinforcement learning environment in which an agent works as the on-duty pharmacist of a fictional regional hospital. 30 medicines in 9 classes are tracked by batch across a central store, seven ward and theatre cabinets and an out-of-hours cupboard. Cabinets record quantities but not batch numbers, so recalled batches must be traced through the issue log. Patients keep receiving their medicines whatever the agent does, and some are allergic to the only remaining alternative. The agent uses 22 hospital-system functions (issue log, cabinet inspection, quarantine, temperature logs, batch records, patient lists, per-patient substitution, urgent courier, second wholesaler, loans from a neighbouring hospital) under 120 minutes of desk time per shift, and each shift sees only the previous shift's handover note.
 
-**Why this setting.** Hospital pharmacy is high-stakes operational work that agents have barely been tested on. It needs tracing from records, exact procedure-following, patient-level constraints, and turning early warnings into action before the consequence arrives. Every outcome is checkable: was a recalled vial given to a patient, did an allergic patient get a contraindicated drug, did a ward run out of a critical medicine.
+**Five tasks in one hospital:** T1 safety incidents (two recalls, a ward fridge excursion that one near-limit batch fails, a central freeze some products tolerate), T2 antibiotic shortage with penicillin-allergic patients, T3 influenza and septic-shock surges within a fixed budget, T4 genuine and reserve requests from nurse managers during an allocation, T5 a two-week rota combining them with an advance allocation notice.
 
-**Reward.** Computed from the simulation, never judged: recalled units given after the notice, contraindicated doses, units a ward could not issue (critical drugs and ICU/ED weighted), good stock wrongly withdrawn, urgent-order surcharge, unattended shifts. Score is normalised per seed: doing nothing = 0, reference pharmacist = 1.
+**Why this setting.** Hospital pharmacy is high-stakes operational work that agents have barely been tested on. Every outcome is checkable: was a recalled or temperature-damaged vial given, did an allergic patient get a contraindicated drug, did a ward run out of a critical medicine.
 
-**Calibration.** Six scripted anchors use the same functions, time and information as the agent (reference, SOP checklist, stop-early, central-store-only, do-nothing, and an exploit probe that withdraws every batch). The pass threshold is the midpoint of the two best honest anchors. Four gates pass on every seed: ordering, judgment gap, threshold margin, exploit suppression.
+**Reward.** Computed from the simulation, never judged. Score is normalised per seed: doing nothing = 0, reference pharmacist = 1.
 
-**Result.** Gemini 3.5 Flash scores **0.79 / 0.70 / 0.73** on three seeds against thresholds of 0.89 / 0.86 / 0.90 (reference 1.00), at or below the rule-following anchor. Every trajectory replays to the exact recorded score.
+**Calibration.** Scripted anchors use the same functions, time and information as the agent: reference, reactive pharmacist (repairs shortages after they happen), SOP checklist, central-store-only, do-nothing, stop-early, and per-task exploit probes (withdraw everything, discard all refrigerated stock, approve the restricted alternative ward-wide, grant every request). Pass threshold = midpoint of the reference and the best other honest anchor. The calibration gates (ordering, judgment gap, threshold margin, exploit suppression, stopping early below the threshold) pass on every seed of every task.
+
+**Result.** DeepSeek V4.1 Flash, 25 runs (5 tasks x 3 seeds plus 2 repeats of one seed per task): **below the reference in 25/25, below the pass threshold in 22/25.** Mean scores: T1 0.70, T2 0.48, T3 0.73, T4 0.27, T5 0.65. Every trajectory replays to the exact recorded score.
 
 **Failure modes:**
-1. *Investigates before it withdraws.* When a recall arrives the issue log already shows where the batch went, and a quarantine takes 10 minutes. The model inspects cabinets one by one (15 minutes each), runs out of desk time and defers the quarantine; recalled units reach patients in every run (5, 12, 26; reference 0-3). In one run its handover note lists every location to quarantine "IMMEDIATELY IN SHIFT 4", written at the end of the shift in which it could have done it.
-2. *Reads the early warning, does not act.* It records the influenza memo but does not order ahead; ICU and Medical run out of piperacillin/tazobactam (58-121 units). Urgent orders over 28 shifts: 2-5.
-3. *Slow response to a confirmed shortage.* Ceftriaxone alternatives approved 7-13 shifts after the allocation notice in two of three runs.
-4. *Desk time spent re-establishing context* after each handover (40-49 policy re-reads per run).
+1. *Investigates before it withdraws.* The issue log already shows where a recalled batch went; the model inspects cabinets one by one, runs out of desk time and defers the quarantine. Recalled units reached patients in every T1 and T5 run (10-89 per run; reference 0-3). One handover note opens "URGENT - CLASS II RECALL NOT YET ACTIONED (ran out of desk time)".
+2. *Does not follow a failed batch after it has moved.* After a freeze, handover restocking had already sent frozen insulin to the wards; the model withdraws only what is left in the fridge.
+3. *Under-supplies a confirmed need.* It refuses every reserve request in T4 but sends too little to wards in a genuine surge; in T2 patients still go without antibiotics, and in one run two doses reached penicillin-allergic patients.
+4. *Plans unevenly for announced shortages.* It sometimes orders ahead of an announced allocation and sometimes barely at all.
 
-What it gets right: no allergic patient ever receives a contraindicated drug, it ignores a distractor recall, and it withdraws no good stock. On a recall-only control task with batches visible everywhere it matches the reference, which shows the gap comes from prioritisation and planning, not from tool use.
+What it gets right: it never withdraws usable stock, ignores distractor mail, and finds the cheaper supply channels in T3, which is why T3 is the one task where it passes the threshold in some runs.
 
 All information needed to do better is available through the functions; the reference uses only that.
 
-**Reproduce (no API key, ~5 s):** `python3 -m pharmacy_env.eval` re-runs all anchors, checks the gates, replays every recorded trajectory and prints the failure modes. Standard library only.
+**Reproduce (no API key, standard library only):** `python3 -m pharmacy_env.eval` re-runs all anchors, checks the gates, replays every trajectory and prints a per-task summary and the failure modes.
 
-**Credits.** Anchor calibration, gate checks and the reward-hack catalogue approach follow StoreBench (arXiv 2610.10942). Domain, world, tasks and code are ours.
+**Credits.** Anchor calibration, gate checks and the reward-hack catalogue approach follow StoreBench (arXiv 2610.10942). Domain, world, tasks and code are ours. Model runs used Verda's inference API.
 
 ## Links still needed
 
-- Source Code: GitHub repository URL (not created yet)
+- Source Code: GitHub repository URL
 - Video: optional demo recording
 - Presentation: optional slides
 
 ## Tech challenges
 
-None claimed by default. We used the Gemini API only as the agent under test; if the team wants to enter "Best Use of Gemini API", the description must explain how Gemini is used.
+The model runs used Verda's inference API, which fits the "Verda Compute Track" tech challenge (prizes are cloud credits). If entered, say so in the description: "All 25 agent runs used Verda's OpenAI-compatible inference API (DeepSeek V4.1 Flash)."
