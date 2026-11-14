@@ -149,7 +149,14 @@ def run(task_id, seed, model, base, key, out_path, temperature=0.0, max_steps=20
     usage = {"prompt_tokens": 0, "completion_tokens": 0}
     steps = nudges = 0
     while not env.done and steps < max_steps:
-        resp = chat(messages, model, base, key, temperature)
+        try:
+            resp = chat(messages, model, base, key, temperature)
+        except RuntimeError as e:
+            if "maximum context length" not in str(e):
+                raise
+            # The conversation outgrew the model's context: treat as stopping early.
+            log.write(json.dumps({"type": "error", "shift": env.shift, "error": "context length exceeded"}) + "\n")
+            break
         for k in usage:
             usage[k] += (resp.get("usage") or {}).get(k, 0)
         msg = resp["choices"][0]["message"]

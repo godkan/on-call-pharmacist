@@ -3,3 +3,5 @@ api.env
 __pycache__/
 results/traj/
 results/*.log
+training/data/
+training/ckpt/
