@@ -255,7 +255,8 @@ def main():
         return
     model = os.environ["LLM_MODEL"]
     os.makedirs(a.out, exist_ok=True)
-    path = os.path.join(a.out, "%s_seed%d_%s_%s_%d.jsonl" % (a.task, a.seed, model.replace("/", "_"), a.memory, int(time.time())))
+    path = os.path.join(a.out, "%s_seed%d_%s_%s_%d_%d.jsonl" % (a.task, a.seed, model.replace("/", "_"), a.memory,
+                                                                int(time.time()), os.getpid()))
     s = run(a.task, a.seed, model, base, key, path, a.temperature, max_steps=a.max_steps, memory=a.memory)
     print(json.dumps({k: s[k] for k in ("task", "seed", "model", "score", "penalty", "tool_calls",
                                         "stopped_early", "usage")}, indent=1))
