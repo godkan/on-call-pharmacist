@@ -120,7 +120,9 @@ def _order(env, drug, qty):
 
 def _approve_per_patient(env, drug, done, wards=None):
     """Approve restricted alternatives for each current patient who is not allergic."""
-    for w in sorted(wards or W.WARDS, key=lambda w: -W.WARD_WEIGHT[w]):
+    for w in sorted(wards or W.PATIENT_WARDS, key=lambda w: (-W.WARD_WEIGHT[w], w)):
+        if not W.usage(drug, w):
+            continue
         pts = env.call("list_patients", {"ward": w, "product_code": drug}).get("patients", [])
         for p in pts:
             for alt in W.ALTERNATIVES.get(drug, []):
@@ -137,6 +139,14 @@ def _shift_index(date_label, part):
     import datetime as dt
     d = dt.datetime.strptime(date_label, "%a %d %b %Y")
     return (d - dt.datetime(2026, 11, 16)).days * 2 + (1 if part == "night" else 0)
+
+
+def _shift_end(label):
+    """End time of the shift named by an issue-log label such as 'Thu 19 Nov 2026 night shift'."""
+    import datetime as dt
+    m = re.match(r"(\w+ \d+ \w+ \d+) (day|night) shift", label)
+    start = dt.datetime.strptime(m.group(1), "%a %d %b %Y") + dt.timedelta(hours=7 if m.group(2) == "day" else 19)
+    return start + dt.timedelta(hours=12)
 
 
 def _hour(label):
@@ -190,6 +200,14 @@ def _cold_response(env, loc, discard_all=False):
                 fail = (freeze_kills and min(temps) < 0) or max(temps) > max_c or before + out_hours > max_h
             if fail and "ok" in env.call("quarantine_lot", {"lot": lot, "location": loc}):
                 withdrawn.add(d)
+            if fail and not discard_all and out_times:
+                # stock of the failed batch moved on from this fridge since the excursion began
+                first = _hour(out_times[0])
+                log = env.call("get_issue_log", {"product_code": d, "lot": lot}).get("entries", [])
+                for w in sorted({e["to"] for e in log if e["from"] == loc and e["to"] != loc
+                                 and "before rota" not in e["when"] and _shift_end(e["when"]) > first}):
+                    if "ok" in env.call("quarantine_lot", {"lot": lot, "location": w}):
+                        withdrawn.add(d)
     return withdrawn
 
 

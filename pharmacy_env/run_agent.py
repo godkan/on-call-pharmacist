@@ -74,6 +74,14 @@ TOOLS = [
         {"ward": WARD, "product_code": CODE, "alternative_code": CODE,
          "patient_id": {"type": "string", "description": "Set to revoke a per-patient approval."}},
         ["ward", "product_code", "alternative_code"]),
+    _fn("place_wholesaler_order", "Off-contract order from Nordic Hospital Supply: list price +10%, delivered in "
+        "two shifts, minimum order EUR 100; not available for products out of stock nationally (15 min).",
+        {"product_code": CODE, "qty": {"type": "integer"}}, ["product_code", "qty"]),
+    _fn("borrow_from_hospital", "Ask Lahti Central Hospital pharmacy for a loan: free, arrives next shift, at most "
+        "10 units of a product per rota, refused for products on national allocation (15 min).",
+        {"product_code": CODE, "qty": {"type": "integer"}}, ["product_code", "qty"]),
+    _fn("return_to_supplier", "Send quarantined stock in the central store back to the wholesaler (10 min).",
+        {"lot": {"type": "string"}}, ["lot"]),
     _fn("place_urgent_order", "Urgent order from RapidRx Express to the central store; arrives next shift, +40% cost (15 min).",
         {"product_code": CODE, "qty": {"type": "integer"}}, ["product_code", "qty"]),
     _fn("end_shift", "Hand over and move to your next shift. Ward cabinets are restocked from central at handover.",
@@ -102,8 +110,11 @@ previous shift wrote with end_shift. Put anything the next shift needs to follow
 
 
 def chat(messages, model, base, key, temperature):
-    body = json.dumps({"model": model, "messages": messages, "tools": TOOLS,
-                       "tool_choice": "auto", "temperature": temperature}).encode()
+    payload = {"model": model, "messages": messages, "tools": TOOLS,
+               "tool_choice": "auto", "temperature": temperature}
+    if os.environ.get("LLM_REASONING_EFFORT"):
+        payload["reasoning_effort"] = os.environ["LLM_REASONING_EFFORT"]
+    body = json.dumps(payload).encode()
     req = urllib.request.Request(base.rstrip("/") + "/chat/completions", data=body, method="POST",
                                  headers={"Content-Type": "application/json", "Authorization": "Bearer " + key})
     for attempt in range(6):
@@ -176,7 +187,8 @@ def run(task_id, seed, model, base, key, out_path, temperature=0.0, max_steps=60
         print("  shift %d/%d, %d tool calls, %d prompt tokens so far" % (
             min(env.shift + 1, env.n_shifts), env.n_shifts, steps, usage["prompt_tokens"]), flush=True)
     return finish(env, task_id, seed, log, steps, usage,
-                  {"model": model, "temperature": temperature, "memory": memory})
+                  {"model": model, "temperature": temperature, "memory": memory, "base_url": base,
+                   "reasoning_effort": os.environ.get("LLM_REASONING_EFFORT")})
 
 
 def system_prompt(env, memory="full"):

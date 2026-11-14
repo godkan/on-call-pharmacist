@@ -202,6 +202,47 @@ class TestColdChain(unittest.TestCase):
         self.assertLess(min(temps), 0)
 
 
+class TestSuppliersAndWorld(unittest.TestCase):
+    def test_tool_definitions_match_engine(self):
+        from pharmacy_env.engine import TOOL_MINUTES
+        from pharmacy_env.run_agent import TOOLS
+        self.assertEqual({t["function"]["name"] for t in TOOLS}, set(TOOL_MINUTES))
+
+    def test_wholesaler_order_arrives_in_two_shifts(self):
+        env = Env(TASKS["T3"](0))
+        r = env.call("place_wholesaler_order", {"product_code": "PIP-45", "qty": 20})
+        self.assertIn("ok", r)
+        env.call("end_shift")
+        self.assertFalse(any(e["lot"].startswith("NH") for e in env.stock))
+        env.call("end_shift")
+        self.assertTrue(any(e["lot"].startswith("NH") and e["loc"] == "CENTRAL" for e in env.stock))
+
+    def test_budget_covers_wholesaler_orders(self):
+        env = Env(TASKS["T3"](0))
+        left = env.call("get_status")["urgent_order_budget_left_eur"]
+        env.call("place_wholesaler_order", {"product_code": "PIP-45", "qty": 20})
+        self.assertAlmostEqual(env.call("get_status")["urgent_order_budget_left_eur"], left - 20 * 7.60 * 1.10, places=2)
+
+    def test_loans_are_limited_and_refused_under_allocation(self):
+        env = Env(TASKS["T4"](0))
+        self.assertIn("error", env.call("borrow_from_hospital", {"product_code": "NOR-4MG", "qty": 5}))
+        self.assertIn("ok", env.call("borrow_from_hospital", {"product_code": "PIP-45", "qty": 10}))
+        self.assertIn("error", env.call("borrow_from_hospital", {"product_code": "PIP-45", "qty": 1}))
+
+    def test_potassium_only_where_allowed(self):
+        env = Env(TASKS["T1"](0))
+        r = env.call("transfer_stock", {"product_code": "KCL-20", "from_location": "CENTRAL",
+                                        "to_location": "MED", "qty": 2})
+        self.assertIn("error", r)
+
+    def test_night_cupboard_only_used_at_night(self):
+        env = Env(TASKS["C1"](0))
+        env.call("end_shift")          # day shift
+        self.assertFalse(any(u["ward"] == "NIGHT" for u in env.usage_log))
+        env.call("end_shift")          # night shift
+        self.assertTrue(any(u["ward"] == "NIGHT" for u in env.usage_log))
+
+
 class TestClaudeHarness(unittest.TestCase):
     def test_claude_loop_with_scripted_client(self):
         """Feed the reference policy's calls through the Claude loop via a fake client."""

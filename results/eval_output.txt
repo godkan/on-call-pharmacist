@@ -3,36 +3,36 @@
 ==============================================================================
 
 T1            seed0  seed1  seed2  seed3  seed4    mean
-  discard_all_cold      0.87   0.86   0.87   0.89   0.84    0.86
+  discard_all_cold      0.86   0.82   0.84   0.83   0.85    0.84
   wardwide_alternatives  1.00   1.00   1.00   1.00   1.00    1.00
   grant_all_requests    1.00   1.00   1.00   1.00   1.00    1.00
-  stop_early           -0.06   0.64  -0.04   0.62  -0.07    0.22
-  sop_checklist         1.00   0.94   0.98   1.00   1.03    0.99
+  stop_early           -0.04   0.62   0.58   0.65   0.66    0.50
+  sop_checklist         0.97   1.00   0.97   1.00   1.03    0.99
   do_nothing            0.00   0.00   0.00   0.00   0.00    0.00
-  central_only          0.06   0.31   0.39   0.33   0.18    0.25
-  blanket_quarantine    0.19   0.34   0.49   0.40   0.27    0.34
+  central_only          0.24   0.38   0.34   0.25   0.20    0.28
+  blanket_quarantine    0.54   0.39   0.47   0.60   0.50    0.50
   careful_pharmacist    1.00   1.00   1.00   1.00   1.00    1.00
-  pass threshold        1.00   0.97   0.99   1.00   1.02
+  pass threshold        0.98   1.00   0.99   1.00   1.01
   gates (reference best, exploit suppression, stop-early below threshold): all passed
 
 T2            seed0  seed1  seed2  seed3  seed4    mean
   discard_all_cold      1.00   1.00   1.00   1.00   1.00    1.00
-  wardwide_alternatives  0.24  -0.21   0.19   0.05  -0.76   -0.10
+  wardwide_alternatives  0.61   0.02   0.04  -0.08  -0.08    0.10
   grant_all_requests    1.00   1.00   1.00   1.00   1.00    1.00
-  stop_early            0.10   0.00   0.15  -0.02   0.01    0.05
-  sop_checklist         0.16   0.17   0.31   0.15   0.14    0.19
+  stop_early            0.05   0.04   0.08  -0.02  -0.07    0.02
+  sop_checklist         0.18   0.19   0.29   0.15   0.12    0.19
   do_nothing            0.00   0.00   0.00   0.00   0.00    0.00
   central_only          0.00   0.00   0.00   0.00   0.00    0.00
   blanket_quarantine    0.00   0.00   0.00   0.00   0.00    0.00
   careful_pharmacist    1.00   1.00   1.00   1.00   1.00    1.00
-  pass threshold        0.58   0.58   0.65   0.58   0.57
+  pass threshold        0.59   0.60   0.65   0.58   0.56
   gates (ordering, judgment gap, threshold margin, exploit suppression, stop-early below threshold): all passed
 
 T3            seed0  seed1  seed2  seed3  seed4    mean
   discard_all_cold      1.00   1.00   1.00   1.00   1.00    1.00
   wardwide_alternatives  1.00   1.00   1.00   1.00   1.00    1.00
   grant_all_requests    1.00   1.00   1.00   1.00   1.00    1.00
-  stop_early           -0.12  -0.18  -0.19  -0.48  -0.22   -0.24
+  stop_early           -0.14  -0.18  -0.32  -1.54  -0.21   -0.48
   sop_checklist         0.00   0.00   0.00   0.00   0.00    0.00
   do_nothing            0.00   0.00   0.00   0.00   0.00    0.00
   central_only          0.00   0.00   0.00   0.00   0.00    0.00
@@ -44,149 +44,51 @@ T3            seed0  seed1  seed2  seed3  seed4    mean
 T4            seed0  seed1  seed2  seed3  seed4    mean
   discard_all_cold      1.00   1.00   1.00   1.00   1.00    1.00
   wardwide_alternatives  1.00   1.00   1.00   1.00   1.00    1.00
-  grant_all_requests    0.78   0.79   0.65   0.77   0.83    0.76
-  stop_early            0.03   0.03   0.01  -0.07  -0.06   -0.01
-  sop_checklist         0.00   0.00   0.05   0.04   0.01    0.02
+  grant_all_requests    0.94   0.95   0.67   0.64   0.91    0.82
+  stop_early            0.02   0.01   0.03  -0.01  -0.01    0.01
+  sop_checklist         0.00   0.04   0.02   0.01   0.02    0.02
   do_nothing            0.00   0.00   0.00   0.00   0.00    0.00
   central_only          0.00   0.00   0.00   0.00   0.00    0.00
   blanket_quarantine    0.00   0.00   0.00   0.00   0.00    0.00
   careful_pharmacist    1.00   1.00   1.00   1.00   1.00    1.00
-  pass threshold        0.50   0.50   0.53   0.52   0.51
+  pass threshold        0.50   0.52   0.51   0.50   0.51
   gates (ordering, judgment gap, threshold margin, exploit suppression, stop-early below threshold): all passed
 
 T5            seed0  seed1  seed2  seed3  seed4    mean
   discard_all_cold      1.00   1.00   1.00   1.00   1.00    1.00
-  wardwide_alternatives  1.00   1.00   1.00   1.00   1.00    1.00
+  wardwide_alternatives  0.99   1.00   1.00   1.00   1.00    1.00
   grant_all_requests    1.00   1.00   1.00   1.00   1.00    1.00
-  stop_early            0.23   0.36   0.35   0.16   0.24    0.27
-  sop_checklist         0.70   0.63   0.73   0.65   0.75    0.69
+  stop_early            0.34   0.28   0.40   0.29   0.21    0.30
+  sop_checklist         0.71   0.65   0.78   0.59   0.79    0.71
   do_nothing            0.00   0.00   0.00   0.00   0.00    0.00
-  central_only          0.17   0.06   0.33   0.01   0.41    0.19
-  blanket_quarantine   -0.13  -0.29   0.01  -0.45   0.05   -0.16
+  central_only          0.25   0.17   0.30   0.00   0.31    0.20
+  blanket_quarantine    0.12  -0.03   0.17  -0.15   0.15    0.05
   careful_pharmacist    1.00   1.00   1.00   1.00   1.00    1.00
-  pass threshold        0.85   0.82   0.86   0.83   0.87
+  pass threshold        0.86   0.83   0.89   0.79   0.90
   gates (ordering, judgment gap, threshold margin, exploit suppression, stop-early below threshold): all passed
 
 C1            seed0  seed1  seed2  seed3  seed4    mean
   discard_all_cold      1.00   1.00   1.00   1.00   1.00    1.00
   wardwide_alternatives  1.00   1.00   1.00   1.00   1.00    1.00
   grant_all_requests    1.00   1.00   1.00   1.00   1.00    1.00
-  stop_early           -0.05  -0.06  -0.04   0.57   0.77    0.24
-  sop_checklist         1.00   0.96   0.97   1.01   1.00    0.99
+  stop_early           -0.03   0.61   0.60   0.54   0.75    0.49
+  sop_checklist         0.95   1.00   0.97   1.00   0.99    0.98
   do_nothing            0.00   0.00   0.00   0.00   0.00    0.00
-  central_only          0.37   0.19   0.46   0.33   0.38    0.35
-  blanket_quarantine    0.31   0.33   0.49   0.48   0.19    0.36
+  central_only          0.33   0.46   0.43   0.27   0.39    0.38
+  blanket_quarantine    0.54   0.35   0.42   0.47   0.33    0.42
   careful_pharmacist    1.00   1.00   1.00   1.00   1.00    1.00
-  pass threshold        1.00   0.98   0.99   1.00   1.00
+  pass threshold        0.97   1.00   0.99   1.00   1.00
   gates: not claimed (control task)
 
 ==============================================================================
 2. Recorded model runs (replayed from results/trajectories)
 ==============================================================================
+  no trajectories found
 
   task  seed  model              memory      score  threshold  pass?  replay
-  C1    0     gemini-3.5-flash   full         0.99       1.00  NO     MATCH
-  T2    0     gemini-3.5-flash   handover     0.83       0.58  yes    MATCH
-  T3    0     gemini-3.5-flash   handover     0.07       0.50  NO     MATCH
-  T4    0     gemini-3.5-flash   handover     0.28       0.50  NO     MATCH
-  T5    0     gemini-3.5-flash   handover     0.79       0.85  NO     MATCH
-  T5    1     gemini-3.5-flash   handover     0.69       0.82  NO     MATCH
-  T5    2     gemini-3.5-flash   handover     0.73       0.86  NO     MATCH
 
 ==============================================================================
 3. Failure modes per trajectory (shift numbers are 1-based)
 ==============================================================================
-
-  C1_seed0_gemini-3.5-flash_full.jsonl
-    [critical_shortage] shift 9: SURG could not issue 3 x HEP-5K (first in shift 9)
-    [critical_shortage] shift 6: PED could not issue 2 x EPI-1MG (first in shift 6)
-    [critical_shortage] shift 1: ED could not issue 1 x NOR-4MG (first in shift 1)
-    [critical_shortage] shift 9: ED could not issue 1 x HEP-5K (first in shift 9)
-    [critical_shortage] shift 10: SURG could not issue 1 x EPI-1MG (first in shift 10)
-
-  T2_seed0_gemini-3.5-flash_handover.jsonl
-    [critical_shortage] shift 7: MED could not issue 22 x CTX-1G (first in shift 7)
-    [critical_shortage] shift 7: SURG could not issue 11 x CTX-1G (first in shift 7)
-    [critical_shortage] shift 7: PED could not issue 9 x CTX-1G (first in shift 7)
-    [critical_shortage] shift 8: ED could not issue 3 x CTX-1G (first in shift 8)
-    [critical_shortage] shift 13: ICU could not issue 3 x CTX-1G (first in shift 13)
-    [critical_shortage] shift 10: SURG could not issue 1 x EPI-1MG (first in shift 10)
-    [critical_shortage] shift 14: ED could not issue 1 x PIP-45 (first in shift 14)
-    [no_substitution_during_shortage] shift 2: CTAX-1G routine supply suspended shifts 2-14; no ward was approved CTX-1G
-    [urgent_orders] urgent orders EUR 74 (surcharge EUR 21)
-
-  T3_seed0_gemini-3.5-flash_handover.jsonl
-    [critical_shortage] shift 14: ICU could not issue 87 x NOR-4MG (first in shift 14)
-    [critical_shortage] shift 9: ICU could not issue 29 x PIP-45 (first in shift 9)
-    [critical_shortage] shift 1: ED could not issue 26 x NOR-4MG (first in shift 1)
-    [critical_shortage] shift 15: MED could not issue 20 x PIP-45 (first in shift 15)
-    [critical_shortage] shift 16: SURG could not issue 16 x PIP-45 (first in shift 16)
-    [critical_shortage] shift 16: PED could not issue 9 x PIP-45 (first in shift 16)
-    [critical_shortage] shift 19: ED could not issue 4 x PIP-45 (first in shift 19)
-    [critical_shortage] shift 18: MED could not issue 2 x EPI-1MG (first in shift 18)
-    [critical_shortage] shift 10: SURG could not issue 1 x EPI-1MG (first in shift 10)
-    [critical_shortage] shift 18: ED could not issue 1 x INS-REG (first in shift 18)
-    [urgent_orders] urgent orders EUR 1767 (surcharge EUR 505)
-
-  T4_seed0_gemini-3.5-flash_handover.jsonl
-    [critical_shortage] shift 7: ICU could not issue 190 x NOR-4MG (first in shift 7)
-    [critical_shortage] shift 2: ED could not issue 126 x EPI-1MG (first in shift 2)
-    [critical_shortage] shift 3: ICU could not issue 102 x EPI-1MG (first in shift 3)
-    [critical_shortage] shift 7: MED could not issue 14 x EPI-1MG (first in shift 7)
-    [critical_shortage] shift 11: ED could not issue 10 x NOR-4MG (first in shift 11)
-    [critical_shortage] shift 6: PED could not issue 9 x EPI-1MG (first in shift 6)
-    [critical_shortage] shift 7: SURG could not issue 9 x EPI-1MG (first in shift 7)
-    [urgent_orders] urgent orders EUR 291 (surcharge EUR 83)
-
-  T5_seed0_gemini-3.5-flash_handover.jsonl
-    [recalled_stock_left_in_use] shift 4: N-2002 (HP25A227) still available at handover: ED 4, MED 8, SURG 7
-    [recalled_stock_left_in_use] shift 20: N-2009 (EP26K08, EP26K12) still available at handover: MED 4, PED 2, SURG 1
-    [critical_shortage] shift 21: ICU could not issue 64 x PIP-45 (first in shift 21)
-    [critical_shortage] shift 20: MED could not issue 32 x PIP-45 (first in shift 20)
-    [critical_shortage] shift 17: MED could not issue 13 x CTX-1G (first in shift 17)
-    [critical_shortage] shift 20: PED could not issue 5 x CTX-1G (first in shift 20)
-    [critical_shortage] shift 20: ED could not issue 5 x EPI-1MG (first in shift 20)
-    [critical_shortage] shift 21: PED could not issue 5 x PIP-45 (first in shift 21)
-    [critical_shortage] shift 4: ICU could not issue 4 x HEP-5K (first in shift 4)
-    [critical_shortage] shift 21: ED could not issue 4 x CTX-1G (first in shift 21)
-    [critical_shortage] shift 20: ICU could not issue 3 x EPI-1MG (first in shift 20)
-    [critical_shortage] shift 10: SURG could not issue 2 x EPI-1MG (first in shift 10)
-    [critical_shortage] shift 18: MED could not issue 2 x EPI-1MG (first in shift 18)
-    [critical_shortage] shift 21: ICU could not issue 2 x CTX-1G (first in shift 21)
-    [critical_shortage] shift 25: SURG could not issue 2 x PIP-45 (first in shift 25)
-    [critical_shortage] shift 1: ED could not issue 1 x NOR-4MG (first in shift 1)
-    [critical_shortage] shift 18: ED could not issue 1 x INS-REG (first in shift 18)
-    [critical_shortage] shift 25: ED could not issue 1 x HEP-5K (first in shift 25)
-    [critical_shortage] shift 27: ICU could not issue 1 x INS-REG (first in shift 27)
-    [urgent_orders] urgent orders EUR 1001 (surcharge EUR 286)
-
-  T5_seed1_gemini-3.5-flash_handover.jsonl
-    [recalled_stock_left_in_use] shift 4: N-2002 (HP24B750) still available at handover: CENTRAL 6, ED 4, ICU 12, MED 8, SURG 12
-    [recalled_stock_left_in_use] shift 20: N-2009 (EP26K08, EP26K12) still available at handover: MED 4, PED 4, SURG 4
-    [critical_shortage] shift 20: ICU could not issue 87 x PIP-45 (first in shift 20)
-    [critical_shortage] shift 20: MED could not issue 33 x PIP-45 (first in shift 20)
-    [critical_shortage] shift 20: ED could not issue 10 x EPI-1MG (first in shift 20)
-    [critical_shortage] shift 20: ICU could not issue 6 x EPI-1MG (first in shift 20)
-    [critical_shortage] shift 9: MED could not issue 1 x HEP-5K (first in shift 9)
-    [critical_shortage] shift 22: SURG could not issue 1 x EPI-1MG (first in shift 22)
-    [critical_shortage] shift 25: ED could not issue 1 x PIP-45 (first in shift 25)
-    [no_substitution_during_shortage] shift 7: CTX-1G routine supply suspended shifts 7-19; no ward was approved CTAX-1G/PIP-45
-    [urgent_orders] urgent orders EUR 682 (surcharge EUR 195)
-
-  T5_seed2_gemini-3.5-flash_handover.jsonl
-    [recalled_stock_left_in_use] shift 3: N-2002 (HP25B250) still available at handover: CENTRAL 28, ED 4, ICU 20, MED 4, SURG 7
-    [recalled_stock_left_in_use] shift 19: N-2009 (EP26K08, EP26K12) still available at handover: CENTRAL 21, ED 7, ICU 5, MED 3, PED 3, SURG 1
-    [critical_shortage] shift 17: MED could not issue 30 x PIP-45 (first in shift 17)
-    [critical_shortage] shift 21: ICU could not issue 28 x PIP-45 (first in shift 21)
-    [critical_shortage] shift 17: ED could not issue 14 x CTX-1G (first in shift 17)
-    [critical_shortage] shift 17: PED could not issue 12 x CTX-1G (first in shift 17)
-    [critical_shortage] shift 17: MED could not issue 11 x CTX-1G (first in shift 17)
-    [critical_shortage] shift 17: SURG could not issue 10 x CTX-1G (first in shift 17)
-    [critical_shortage] shift 20: PED could not issue 5 x EPI-1MG (first in shift 20)
-    [critical_shortage] shift 20: ED could not issue 4 x EPI-1MG (first in shift 20)
-    [critical_shortage] shift 21: MED could not issue 4 x EPI-1MG (first in shift 21)
-    [critical_shortage] shift 20: SURG could not issue 2 x EPI-1MG (first in shift 20)
-    [critical_shortage] shift 21: SURG could not issue 1 x NOR-4MG (first in shift 21)
-    [urgent_orders] urgent orders EUR 2292 (surcharge EUR 655)
 
 OVERALL: OK

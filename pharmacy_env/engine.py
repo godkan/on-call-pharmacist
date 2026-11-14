@@ -29,6 +29,9 @@ TOOL_MINUTES = {
     "revoke_substitution": 5,
     "get_temperature_log": 5,
     "get_lot_record": 5,
+    "place_wholesaler_order": 15,
+    "borrow_from_hospital": 15,
+    "return_to_supplier": 10,
     "list_approvals": 5,
     "quarantine_lot": 10,
     "transfer_stock": 10,
@@ -97,7 +100,9 @@ COLD_CHAIN_SOP = (
     "each refrigerated batch it held against the stability guidance in get_drug_info: the highest "
     "temperature reached, whether it froze, and the batch's cumulative time outside 2-8 C (earlier time is in "
     "the batch record, get_lot_record; add the hours of this excursion). Withdraw (quarantine) batches that "
-    "fail the guidance at that location only; batches that pass stay in use. Then arrange replacement supply."
+    "fail the guidance; batches that pass stay in use. Stock of a failed batch that has been moved on from that "
+    "refrigerator since the excursion began (see get_issue_log) is affected too and must be withdrawn where it "
+    "now is. Then arrange replacement supply."
 )
 
 POLICIES_V3 = {
@@ -148,7 +153,7 @@ class Env:
         self.minutes_left = SHIFT_MINUTES
         self.done = False
         # stock entries: dict(lot, drug, loc, qty, status, expiry)
-        self.products = list(task.get("products", W.BASE_PRODUCTS))
+        self.products = list(task.get("products", W.PRODUCTS))
         self.stock = [dict(e) for e in task["stock"]]
         self.notices = task["notices"]
         self.read_ids = set()
@@ -170,6 +175,7 @@ class Env:
         self.cold_events = task.get("cold_events", [])     # dict(location, shift, start, hours, temp)
         self.lot_hours = task.get("lot_hours_out", {})     # lot -> hours outside 2-8 C before the rota
         self.received = {}                                 # lot -> shift it arrived at the central store
+        self.borrowed = {}                                 # product -> units borrowed from Lahti Central
         self.metrics = {
             "recalled_given": 0,          # units of recalled lots given after the notice
             "shortfall": {},              # (ward, drug) -> units not available
@@ -239,6 +245,8 @@ class Env:
         recalled = self.recalled_lots()
         self._consume_patients(recalled)
         for ward in W.WARDS:
+            if ward in W.NIGHT_ONLY and s % 2 == 0:
+                continue          # the out-of-hours cupboard is used only when the pharmacy is closed
             for drug in self.products:
                 if drug in self.patient_drugs:
                     continue
@@ -330,14 +338,14 @@ class Env:
                     share = self.task.get("standing_share", {}).get(drug, 1.0)
                     gap = min(gap, int(W.DELIVERY_EVERY_SHIFTS * W.total_usage(drug) * share))
                 if gap > 0:
-                    lot = "%s%s%02d" % (W.DRUGS[drug][4], self.task["delivery_lot_tag"], s)
+                    lot = "%s%s%02d" % (W.prefix(drug), self.task["delivery_lot_tag"], s)
                     self._add(lot, drug, W.CENTRAL, gap, "2028-03-31")
                     self.received.setdefault(lot, s)
 
     def _advance(self):
         self._consume()
+        self._apply_excursions(self.shift)      # before handover restocking moves stock out of a failed fridge
         self._restock_cabinets()
-        self._apply_excursions(self.shift)
         self.shift += 1
         self.minutes_left = SHIFT_MINUTES
         self.ordered_this_shift = {}
@@ -408,7 +416,7 @@ class Env:
         return {"hospital": W.HOSPITAL, "shift": self.shift_label(), "shift_number": self.shift + 1,
                 "shifts_in_rota": self.n_shifts, "minutes_left_this_shift": self.minutes_left,
                 "unread_notices": len(unread),
-                **({"urgent_order_budget_left_eur": round(self.budget - self.metrics["urgent_spend"], 2)}
+                **({"urgent_order_budget_left_eur": round(self.budget - self._offcontract_spent(), 2)}
                    if self.budget is not None else {})}
 
     def t_read_notices(self, include_read=False):
@@ -439,7 +447,7 @@ class Env:
         status = "normal"
         if sus and sus[0] <= self.shift <= sus[1]:
             status = "routine deliveries suspended until %s" % self.shift_label(sus[1] + 1)
-        return {"product_code": d, "name": W.drug_name(d), "critical_medicine": W.critical(d),
+        return {"product_code": d, "name": W.drug_name(d), "critical_medicine": W.critical(d), **W.attributes(d),
                 "unit_price_eur": W.price(d), "approved_alternatives": W.ALTERNATIVES.get(d, []),
                 "alternative_restrictions": {a: "contraindicated in %s allergy; approve per patient only"
                                              % W.RESTRICTIONS[a] for a in W.ALTERNATIVES.get(d, [])
@@ -503,7 +511,7 @@ class Env:
             return {"error": "Unknown location."}
         now = self.shift * 12
         rows = []
-        for h in range(max(0, now - 24), now):
+        for h in range(now - 24, now):
             t = START + dt.timedelta(hours=h)
             rows.append({"time": t.strftime("%a %d %b %H:00"), "celsius": self.temperature(location, h)})
         return {"location": W.LOCATION_NAMES[location] + " medication refrigerator", "last_24_hours": rows}
@@ -534,8 +542,8 @@ class Env:
                           for e in sorted(rows, key=lambda e: e["lot"])]}
 
     def t_list_patients(self, ward, product_code=None):
-        if ward not in W.WARDS:
-            return {"error": "Unknown ward."}
+        if ward not in W.PATIENT_WARDS:
+            return {"error": "Patient lists exist for inpatient areas: %s" % ", ".join(W.PATIENT_WARDS)}
         pts = self.active_patients(ward=ward, drug=product_code)
         return {"ward": ward, "patients": [
             {"patient_id": p["id"], "on": p["drug"], "doses_per_shift": p["doses"],
@@ -565,6 +573,7 @@ class Env:
                         "note": "Pharmacist checked the cabinet: no units of this batch found."}
             return {"error": "No available stock of lot %s at %s." % (lot, location)}
         recalled = self.recalled_lots()
+        damaged_here = any(e.get("damaged") for e in hits)
         n = 0
         for e in hits:
             qty = e["qty"]
@@ -572,7 +581,7 @@ class Env:
             self._add(e["lot"], e["drug"], location, qty, e["expiry"], status="quarantined",
                       damaged=e.get("damaged", False))
             n += qty
-            if e["lot"] not in recalled and not e.get("damaged"):
+            if e["lot"] not in recalled and not damaged_here:
                 self.metrics["wrong_quarantine_units"] += qty
         return {"ok": True, "quarantined_units": n, "lot": lot, "location": location}
 
@@ -582,6 +591,9 @@ class Env:
         qty = int(qty)
         if qty <= 0 or from_location == to_location:
             return {"error": "Quantity must be positive and locations different."}
+        allowed = W.RESTRICTED_STORAGE.get(product_code)
+        if allowed and to_location not in allowed:
+            return {"error": "Hospital policy: %s may only be stocked in %s." % (product_code, ", ".join(allowed))}
         moved = self._move(product_code, from_location, to_location, qty)
         return {"ok": True, "moved_units": moved, "note": "" if moved == qty else
                 "only %d available units at %s" % (moved, from_location)}
@@ -599,6 +611,70 @@ class Env:
             return {"ok": True, "scope": "patient %s" % patient_id}
         self.substitutions.add((ward, product_code, alternative_code))
         return {"ok": True, "scope": "all patients on %s" % ward}
+
+    def _offcontract_spent(self):
+        return self.metrics["urgent_spend"] + self.metrics.get("wholesaler_spend", 0.0)
+
+    def _on_allocation(self, d):
+        return d in self.urgent_caps
+
+    def _supply_paused(self, d):
+        sus = self.suspended.get(d)
+        return bool(sus and sus[0] <= self.shift <= sus[1])
+
+    def t_place_wholesaler_order(self, product_code, qty):
+        """Second wholesaler (Nordic Hospital Supply): off-contract, +10%, delivered in two shifts."""
+        if product_code not in self.products:
+            return {"error": "Unknown product code."}
+        qty = int(qty)
+        if qty <= 0 or qty > 3 * W.central_par(product_code):
+            return {"error": "Quantity must be between 1 and %d." % (3 * W.central_par(product_code))}
+        if self._on_allocation(product_code) or self._supply_paused(product_code):
+            return {"error": "Nordic Hospital Supply: %s is out of stock nationally; no delivery possible." % product_code}
+        cost = qty * W.price(product_code) * 1.10
+        if cost < 100:
+            return {"error": "Nordic Hospital Supply: minimum order value EUR 100 (this order EUR %.2f)." % cost}
+        if self.budget is not None and self._offcontract_spent() + cost > self.budget + 1e-9:
+            return {"error": "Urgent-order budget exceeded: EUR %.2f left, order costs EUR %.2f."
+                             % (self.budget - self._offcontract_spent(), cost)}
+        self.order_seq += 1
+        lot = "NH%s%s%02d" % (W.prefix(product_code), self.task["delivery_lot_tag"], self.order_seq)
+        self.pending_orders.append((self.shift + 2, product_code, qty, lot))
+        self.metrics["wholesaler_spend"] = self.metrics.get("wholesaler_spend", 0.0) + cost
+        self.metrics["urgent_premium"] += qty * W.price(product_code) * 0.10
+        return {"ok": True, "order_ref": "NHS-%04d" % (self.order_seq + 7300),
+                "arrives": self.shift_label(self.shift + 2), "cost_eur": round(cost, 2)}
+
+    def t_borrow_from_hospital(self, product_code, qty):
+        """Loan from Lahti Central Hospital pharmacy: free, next shift, at most 10 units of a product per rota;
+        refused for products on national allocation."""
+        if product_code not in self.products:
+            return {"error": "Unknown product code."}
+        qty = int(qty)
+        if self._on_allocation(product_code):
+            return {"error": "Lahti Central Hospital: we are on allocation for %s too and cannot lend." % product_code}
+        left = 10 - self.borrowed.get(product_code, 0)
+        if qty <= 0 or qty > left:
+            return {"error": "Lahti Central Hospital can lend at most %d more units of %s this period." % (left, product_code)}
+        self.borrowed[product_code] = self.borrowed.get(product_code, 0) + qty
+        self.order_seq += 1
+        lot = "LN%s%s%02d" % (W.prefix(product_code), self.task["delivery_lot_tag"], self.order_seq)
+        self.pending_orders.append((self.shift + 1, product_code, qty, lot))
+        return {"ok": True, "arrives": self.shift_label(self.shift + 1),
+                "note": "Loan to be returned when supply allows."}
+
+    def t_return_to_supplier(self, lot):
+        """Send quarantined stock held in the central store back to the wholesaler."""
+        hits = [e for e in self.stock if e["lot"].upper() == str(lot).strip().upper() and e["loc"] == W.CENTRAL
+                and e["status"] == "quarantined" and e["qty"] > 0]
+        if not hits:
+            return {"error": "No quarantined stock of batch %s in the central store." % lot}
+        n = 0
+        for e in hits:
+            n += e["qty"]
+            e["qty"] = 0
+        self.metrics["returned_units"] = self.metrics.get("returned_units", 0) + n
+        return {"ok": True, "returned_units": n}
 
     def t_revoke_substitution(self, ward, product_code, alternative_code, patient_id=None):
         key = (patient_id, product_code, alternative_code) if patient_id else (ward, product_code, alternative_code)
@@ -626,12 +702,12 @@ class Env:
             return {"error": "RapidRx allocation: at most %d units of %s per shift (%d already ordered "
                              "this shift)." % (cap, product_code, self.ordered_this_shift.get(product_code, 0))}
         cost = qty * W.price(product_code) * (1 + W.EMERGENCY_MARKUP)
-        if self.budget is not None and self.metrics["urgent_spend"] + cost > self.budget + 1e-9:
+        if self.budget is not None and self._offcontract_spent() + cost > self.budget + 1e-9:
             return {"error": "Urgent-order budget exceeded: EUR %.2f left, order costs EUR %.2f."
-                             % (self.budget - self.metrics["urgent_spend"], cost)}
+                             % (self.budget - self._offcontract_spent(), cost)}
         self.ordered_this_shift[product_code] = self.ordered_this_shift.get(product_code, 0) + qty
         self.order_seq += 1
-        lot = "RX%s%s%02d" % (W.DRUGS[product_code][4], self.task["delivery_lot_tag"], self.order_seq)
+        lot = "RX%s%s%02d" % (W.prefix(product_code), self.task["delivery_lot_tag"], self.order_seq)
         self.pending_orders.append((self.shift + 1, product_code, qty, lot))
         self.metrics["urgent_spend"] += cost
         self.metrics["urgent_premium"] += qty * W.price(product_code) * W.EMERGENCY_MARKUP

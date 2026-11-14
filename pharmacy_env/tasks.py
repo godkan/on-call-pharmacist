@@ -14,8 +14,8 @@ def _initial_stock(rng, products=None):
     """Two lots per product: an older one (A) and a newer one (B). Cabinets mostly
     hold the older lot because they were filled from central earlier."""
     stock, lots = [], {}
-    for d in (products or W.BASE_PRODUCTS):
-        pre = W.DRUGS[d][4]
+    for d in (products or W.PRODUCTS):
+        pre = W.prefix(d)
         a, b = _lot_code(rng, pre), _lot_code(rng, pre)
         while b == a:
             b = _lot_code(rng, pre)
@@ -128,7 +128,7 @@ def _patients(rng, n_shifts, drug="CTX-1G", penicillin_rate=0.25):
     """Patients on a product, one dose per shift each, keeping each ward at its usual
     census; stays of 4-14 shifts, about a quarter with a penicillin allergy."""
     out, k = [], 0
-    for w in W.WARDS:
+    for w in W.PATIENT_WARDS:
         for _ in range(int(W.usage(drug, w))):
             start = -rng.randint(0, 8)
             while start < n_shifts:
@@ -196,7 +196,7 @@ def fortnight_task(seed):
         # The second recall names the two routine deliveries (shifts 8 and 12) that are
         # spread over the central store and every cabinet when the notice arrives.
         _recall_notice("N-2009", r2, "EPI-1MG",
-                       ["%s%s%02d" % (W.DRUGS["EPI-1MG"][4], TAG, s) for s in (8, 12)],
+                       ["%s%s%02d" % (W.prefix("EPI-1MG"), TAG, s) for s in (8, 12)],
                        "ampoules may contain sub-potent product (assay failure at stability timepoint)",
                        "II", rng),
         _mail("N-2010", 24, "Hospital IT Service Desk",
@@ -270,7 +270,7 @@ def _most_spread_lot(seed, stock, shift, drug):
     return max(sorted(held), key=lambda l: (len(wards.get(l, ())), held[l]))
 
 
-T1_PRODUCTS = W.BASE_PRODUCTS + ["SUX-100", "ROC-50"]
+T1_PRODUCTS = W.PRODUCTS
 
 
 def tracing_task(seed):
