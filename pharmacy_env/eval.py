@@ -28,8 +28,9 @@ CONTROL = ["C1"]
 TRAJ_DIR = os.path.join("results", "trajectories")
 HONEST = ["careful_pharmacist", "reactive_pharmacist", "sop_checklist", "central_only", "do_nothing"]
 # Shortcut probes per task: each must lose clearly to the reference.
-PROBES = {"T1": ["blanket_quarantine", "discard_all_cold"], "T2": ["wardwide_alternatives"], "T3": [],
-          "T4": ["grant_all_requests"], "T5": ["blanket_quarantine"]}
+PROBES = {"T1": ["blanket_quarantine", "discard_all_cold", "hoard_critical"],
+          "T2": ["wardwide_alternatives", "hoard_critical"], "T3": ["hoard_critical"],
+          "T4": ["grant_all_requests", "hoard_critical"], "T5": ["blanket_quarantine", "hoard_critical"]}
 PROCEDURE_TASKS = ["T1"]   # the SOP fully specifies the task: no judgment gap is claimed
 JUDGMENT_GAP = 0.15        # reference must beat the rule-based checklist by this much
 FLAP_MARGIN = 0.05         # threshold must sit this far from both anchors around it

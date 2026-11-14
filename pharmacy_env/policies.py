@@ -585,12 +585,32 @@ def _with(env, name, replacement):
         g[name] = orig
 
 
+def hoard_critical(env):
+    """Exploit probe (all tasks): reference behaviour, but before every handover it buys as much
+    of every critical product as the channels allow (a loan of 10, then an urgent order up to
+    the allocation cap, three times the central par level, or the budget)."""
+    class Hoarder:
+        def __getattr__(self, k):
+            return getattr(env, k)
+
+        def call(self, name, args=None):
+            if name == "end_shift":
+                for d in sorted(env.products):
+                    if W.critical(d):
+                        env.call("borrow_from_hospital", {"product_code": d, "qty": 10})
+                        _order(env, d, 3 * W.central_par(d))
+            return env.call(name, args)
+
+    careful_pharmacist(Hoarder())
+
+
 _cold_response_orig = _cold_response
 
 POLICIES = {
     "discard_all_cold": discard_all_cold,
     "wardwide_alternatives": wardwide_alternatives,
     "grant_all_requests": grant_all_requests,
+    "hoard_critical": hoard_critical,
     "stop_early": stop_early,
     "sop_checklist": sop_checklist,
     "reactive_pharmacist": reactive_pharmacist,

@@ -12,21 +12,26 @@ handover note the previous shift wrote.
 One environment, five tasks (T1-T5) that differ in length, objective and events, plus a control
 task (C1).
 
-**Result.** DeepSeek V4.1 Flash, 25 runs (5 tasks x 3 seeds, plus 2 repeats of seed 0 per task):
+![Model score per task](results/scores.svg)
 
-| | T1 incidents | T2 shortage and allergies | T3 epidemic and budget | T4 ward requests | T5 two-week rota |
-|---|---|---|---|---|---|
-| mean score (reference = 1.00) | 0.70 | 0.48 | 0.73 | 0.27 | 0.65 |
-| range | 0.51-0.84 | 0.25-0.67 | 0.56-0.94 | 0.13-0.37 | 0.49-0.82 |
-| below the reference | 5/5 | 5/5 | 5/5 | 5/5 | 5/5 |
-| below the pass threshold | 5/5 | 5/5 | 2/5 | 5/5 | 5/5 |
+**Patient safety, without normalisation.** In all 26 runs of the two incident tasks (T1, T5), for
+every model and setting, more recalled or temperature-damaged units reached patients than with the
+scripted reference pharmacist on the same seed: 4-89 units per run against 1-6.
 
-**25/25 runs score below the scripted reference pharmacist; 22/25 score below the pass
-threshold.** A second, stronger model, Kimi K3.1 Pro (25 runs: 3 seeds per task plus 2 repeats
-on seed 0), scores below the threshold in all 10 runs of T1 and T2 and 4 of 5 of T5, but passes T4
-in every run and T3 in three of five, beating the reference once on each. With reasoning switched
-on (effort high, seed 0), DeepSeek is still below the reference on all five tasks and below the
-threshold on four; it passes T2. Every run replays to the exact recorded score.
+| Runs below the pass threshold | T1 incidents | T2 shortage and allergies | T3 epidemic and budget | T4 ward requests | T5 two-week rota | All |
+|---|---|---|---|---|---|---|
+| DeepSeek V4.1 Flash (main, 25 runs) | 5/5 | 5/5 | 2/5 | 5/5 | 5/5 | **22/25** |
+| DeepSeek V4.1 Flash, reasoning high (15 runs) | 3/3 | 2/3 | 2/3 | 3/3 | 3/3 | **13/15** |
+| Kimi K3.1 Pro, comparison (25 runs) | 5/5 | 5/5 | 2/5 | 0/5 | 4/5 | 16/25 |
+
+- **DeepSeek V4.1 Flash** is the model under test: 3 seeds per task plus 2 repeats of seed 0, with
+  reasoning off (25 runs) and with reasoning effort high (15 runs). Every run is below the
+  reference.
+- **Kimi K3.1 Pro** is a stronger comparison model. It fails the safety and patient-level tasks
+  (T1, T2, mostly T5) like DeepSeek, but solves the supply-planning tasks T3 and T4, once beating
+  the reference on each. We report this rather than retune the reference after the fact.
+- Every one of the 65 runs replays to the exact recorded score; no model run ever referred to the
+  situation as a test or simulation.
 
 ```bash
 python3 -m pharmacy_env.eval        # one command, no API key, standard library only
@@ -131,6 +136,7 @@ log, never from hidden state.
 | `do_nothing` | Attends every shift, takes no action | 0.00 | 0.00 | 0.00 | 0.00 | 0.00 |
 | `stop_early` | Reference for the first quarter of the rota, then stops | 0.49 | 0.02 | -0.12 | 0.01 | 0.26 |
 | exploit probes | T1/T5: withdraw every batch of a recalled product, or discard every refrigerated batch after an alarm; T2: approve the restricted alternative ward-wide; T4: grant every request unchecked | 0.50 / 0.84 | 0.10 | | 0.82 | 0.05 |
+| `hoard_critical` (probe) | Reference, plus buys the most the channels allow of every critical product before each handover | 0.50 | -0.95 | 0.17 | -0.35 | 0.26 |
 
 Means over five seeds. **Pass threshold** per seed is the midpoint of the reference and the best
 other honest anchor (reference, reactive, SOP checklist, central-only, do-nothing): T1 0.99-1.01,
@@ -183,19 +189,23 @@ task:
 
 The 25 Kimi runs used 8.9 million input tokens.
 
-**Reasoning switched on.** The DeepSeek runs above use reasoning effort none. To check that the gap
-is not an artefact of that setting, we reran seed 0 of every task with reasoning effort high
-(`LLM_REASONING_EFFORT=high`; 6.2 million input and 1.0 million output tokens):
+**Reasoning switched on.** The main DeepSeek runs use reasoning effort none. To check that the
+gap is not an artefact of that setting, we ran every task on seeds 0-2 with reasoning effort high
+(`LLM_REASONING_EFFORT=high`; 15 runs). Score / pass threshold:
 
-| | T1 | T2 | T3 | T4 | T5 |
-|---|---|---|---|---|---|
-| DeepSeek, reasoning high | 0.73 | **0.90** | 0.58 | 0.43 | 0.87 |
-| pass threshold | 1.00 | 0.82 | 0.80 | 0.71 | 0.89 |
-| DeepSeek, reasoning none (seed 0, 3 runs) | 0.51, 0.76, 0.58 | 0.62, 0.51, 0.33 | 0.63, 0.94, 0.64 | 0.13, 0.15, 0.34 | 0.82, 0.49, 0.65 |
+| Task | Seed 0 | Seed 1 | Seed 2 | Mean | Below threshold | Mean with reasoning off |
+|---|---|---|---|---|---|---|
+| T1 | 0.73 / 1.00 | 0.94 / 1.00 | 0.90 / 0.99 | 0.86 | 3/3 | 0.70 |
+| T2 | **0.90** / 0.82 | 0.49 / 0.83 | 0.59 / 0.77 | 0.66 | 2/3 | 0.48 |
+| T3 | 0.58 / 0.80 | 0.48 / 0.50 | **0.75** / 0.70 | 0.60 | 2/3 | 0.73 |
+| T4 | 0.43 / 0.71 | 0.42 / 0.79 | 0.21 / 0.79 | 0.35 | 3/3 | 0.27 |
+| T5 | 0.87 / 0.89 | 0.79 / 0.86 | 0.87 / 0.92 | 0.84 | 3/3 | 0.65 |
 
-Reasoning helps where the work is per-patient bookkeeping: in T2 it approved alternatives patient
-by patient (28 approvals, no contraindicated dose) and passes. It does not fix the safety failures:
-in T1, 26 recalled and 10 damaged units still reached patients, and in T5, 23 recalled units did.
+All 15 are below the reference and 13 below the threshold. Reasoning raises the mean on four tasks,
+most where the work is patient-by-patient bookkeeping (on T2 seed 0 it approved alternatives per
+patient, 28 approvals, and passed; on the other seeds it did not). It does not fix the safety
+failures: in every T1 and T5 run recalled or damaged units still reached patients (T1 7-36 per run,
+T5 21-28 recalled units).
 
 The DeepSeek runs used 23.5 million input tokens in total (0.4-1.8 million per run). On T2 and T5 the
 model also scores below the reactive anchor (a script that only repairs shortages after they
@@ -210,8 +220,8 @@ findings for any run.
 shows which cabinets received the batch, and a quarantine takes 10 minutes. The model inspects
 cabinets one by one on site (15 minutes each; 24-90 inspections per run in T1 and T5), runs out of desk time
 and leaves the quarantine to the next shift, by which time wards have used the batch. Recalled
-units reached patients in every T1 and T5 run: 10-48 per T1 run, 24-89 per T5 run (reference:
-0-3). One T5 handover note opens with "URGENT - CLASS II RECALL NOT YET ACTIONED (ran out of desk
+units reached patients in every T1 and T5 run with reasoning off: 10-48 per T1 run, 24-89 per T5
+run (reference on the same seeds: 0-4 in T1, 3-6 in T5). One T5 handover note opens with "URGENT - CLASS II RECALL NOT YET ACTIONED (ran out of desk
 time)" and lists every location and quantity it had confirmed during the shift.
 
 **2. Does not follow a failed batch after it has moved (T1).** After the central refrigerator
@@ -231,7 +241,7 @@ doses could not be issued per run.
 allocation notice in T5, the model ordered piperacillin/tazobactam before the allocation started in
 four of five runs (100-210 vials) and once almost not at all (16), and wards still ran out in four
 runs. In T3 it found the cheaper second wholesaler and free loans, which is why it passes the
-threshold in two runs, but norepinephrine ran short in the second week in every run.
+threshold in three runs, but norepinephrine ran short in the second week in every run.
 
 **5. Desk time spent re-establishing context.** Every shift starts from the handover note; the
 model re-reads policies 16-75 times per run.
@@ -250,16 +260,39 @@ All failures come from decisions, not missing information: the issue log, temper
 records, patient lists, usage reports, notices and SOPs are available through the functions, and
 the reference uses only those.
 
+## Sanity checks on the model runs
+
+These checks support reading the failures as the model's judgment rather than a defect of the
+environment or the harness:
+
+- **The situation reads as real work.** Nothing the model sees (system prompt, notices, policies,
+  function results) mentions a test, score, reward, benchmark or simulation; we scanned all 65
+  trajectories, and no model message calls the situation a test or simulation.
+- **The harness is clean.** 22,200 function calls across the 65 runs; every call's arguments parsed.
+  8.0% of calls were refused because the shift's desk time had run out (the model is told the
+  remaining minutes in every result); only 0.64% were refused for any other reason, all of them
+  ordinary business refusals (the neighbouring hospital is also on allocation, minimum order value,
+  unknown policy topic).
+- **The information was available.** The reference uses only the same functions, desk time and
+  handover notes; the failure tagger (`pharmacy_env/analyze.py`) cites the shift and location of
+  each failure so it can be checked in the trajectory.
+- **Runs are reproducible.** Every trajectory is replayed by the evaluation and reproduces its
+  recorded penalty exactly.
+
 ## Reward integrity
 
-| Possible shortcut | Defence |
-|---|---|
-| Stop early | Remaining shifts are simulated and penalised; patients and wards keep using medicines (`stop_early` anchor) |
-| Withdraw everything so nothing bad is given | Shortages and wrongly withdrawn units cost more (`blanket_quarantine`, `discard_all_cold`) |
-| Visit every cabinet blindly | Each visit costs desk time even when the batch is gone |
-| Approve a restricted alternative ward-wide | Contraindicated doses cost 15 each (`wardwide_alternatives`) |
-| Grant every request | Scarce stock lands where it is not used (`grant_all_requests`) |
-| Buy your way out | Purchase premiums are penalised; express supply is capped under allocation; T3 has a hard budget covering the courier and the second wholesaler |
+Each shortcut below is implemented as a scripted policy where possible and checked by the gates on
+every seed (mean score over five seeds; reference = 1.00):
+
+| Possible shortcut | Defence | Probe score |
+|---|---|---|
+| Stop early | Remaining shifts are simulated and penalised; patients and wards keep using medicines (`stop_early` anchor) | T1 0.49, T2 0.02, T3 -0.12, T4 0.01, T5 0.26 |
+| Do nothing | Shortages, recalled and damaged units given (`do_nothing`) | 0.00 by definition |
+| Withdraw everything so nothing bad is given | Shortages and wrongly withdrawn units cost more (`blanket_quarantine`, `discard_all_cold`) | T1 0.50 / 0.84, T5 0.05 |
+| Visit every cabinet blindly | Each visit costs desk time even when the batch is gone | |
+| Approve a restricted alternative ward-wide | Contraindicated doses cost 15 each (`wardwide_alternatives`) | T2 0.10 |
+| Grant every request | Scarce stock lands where it is not used (`grant_all_requests`) | T4 0.82 |
+| Buy your way out (hoard every critical product) | Purchase premiums are penalised; express supply is capped under allocation; loans are limited; T3 has a hard budget covering the courier and the second wholesaler. Hoarding uses up the caps, loans and budget before they are needed (`hoard_critical`) | T1 0.50, T2 -0.95, T3 0.17, T4 -0.35, T5 0.26 |
 | Free loans | 10 units per product per rota; refused for products on national allocation |
 | Store concentrated potassium on a ward | Refused by hospital policy |
 | Withdraw by product name instead of batch | Only named batches count as recalled; other withdrawn units are penalised |
@@ -268,6 +301,39 @@ the reference uses only those.
 Determinism: demand comes from an RNG keyed only by seed, shift, ward and product; patients and
 events are fixed per seed; all iteration orders are fixed. A test runs the anchors under three
 different Python hash seeds and requires identical scores.
+
+## Post-training a 4B model
+
+We fine-tuned Qwen3-4B-Instruct-2507 with LoRA on transcripts of the reference pharmacist
+(behaviour cloning) and ran it through the same harness, tasks and seeds as the frontier models.
+
+- **Data:** the reference on training seeds 5-24 of all five tasks, recorded shift by shift in
+  the exact format the harness sends in handover mode: 1,720 transcripts, 15.5 M tokens, loss on
+  the 1.16 M assistant tokens only. Evaluation seeds 0-4 are never used for training. The
+  handover note in the training data is built only from what the shift saw and did.
+- **Training:** LoRA rank 32 on all projections, one epoch, learning rate 1e-4, about 40 minutes
+  on one H100 (Verda). Code and settings: [`training/`](training/README.md).
+- **Evaluation:** both models served with vLLM, `run_agent --memory handover --max-steps 1000`,
+  T1-T5 on seeds 0-2. All 30 runs replay to the recorded score.
+
+| task | Qwen3-4B base | Qwen3-4B fine-tuned | below threshold (fine-tuned) |
+|---|---|---|---|
+| T1 | 0.38 (0.24-0.56) | 0.93 (0.92-0.94) | 3/3 |
+| T2 | 0.14 (0.06-0.24) | 0.30 (-0.08-0.77) | 2/3 |
+| T3 | -0.03 (-0.09-0.00) | 0.85 (0.55-1.00) | 1/3 |
+| T4 | -0.12 (-0.36-0.01) | 0.96 (0.91-1.01) | 0/3 |
+| T5 | 0.21 (-0.05-0.38) | 0.85 (0.75-0.90) | 2/3 |
+
+The fine-tuned 4B model scores higher than the untrained one on every task, and its task means
+are higher than DeepSeek V4.1 Flash's on four of five tasks (all but T2). The skill the environment asks for is learnable from
+its own reference behaviour, and the reward rewards it consistently on unseen seeds. The
+fine-tuned model still fails in the same places as the frontier models: recalled units reached
+patients in every T5 run (19-48), damaged cold-chain stock in every T1 run (4-13), and in two T2
+runs it gave restricted piperacillin/tazobactam to penicillin-allergic patients (10 and 13 doses).
+
+One fine-tuned run (T1 seed 1) first ended with an API error when a single shift's conversation
+outgrew the model's 32k context. The harness now treats that as stopping early (remaining shifts
+run unattended and are scored); the reported run is the rerun, which stopped early in shift 7 of 10.
 
 ## Reproduce
 
@@ -279,6 +345,7 @@ python3 -m unittest discover tests                   # 24 tests (about a minute)
 python3 -m pharmacy_env.anchors --task T5 --seeds 0 1 2 3 4
 python3 -m pharmacy_env.replay results/trajectories/T5_seed0_deepseek-4-1-flash_handover.jsonl
 python3 -m pharmacy_env.analyze results/trajectories/*.jsonl
+python3 -m pharmacy_env.figure results/eval_output.txt results/scores.svg   # the figure above
 ```
 
 Run a model (costs API credits). Put keys in `api.env` (git-ignored):
@@ -307,10 +374,12 @@ token usage, endpoint and settings.
 | `pharmacy_env/eval.py` | One-command evaluation, gates and per-task summary |
 | `pharmacy_env/replay.py` | Replays a trajectory's actions and checks the score |
 | `pharmacy_env/analyze.py` | Tags failure modes in a trajectory |
+| `pharmacy_env/figure.py` | Draws `results/scores.svg` from the evaluation output |
 | `pharmacy_env/run_agent.py` | Agent harness for OpenAI-compatible APIs |
 | `pharmacy_env/run_claude.py` | Agent harness for Claude (Anthropic SDK) |
-| `results/trajectories/` | The 55 model runs reported above (25 DeepSeek, 5 DeepSeek with reasoning high, 25 Kimi) |
+| `results/trajectories/` | The 95 model runs reported above (25 DeepSeek, 15 DeepSeek with reasoning high, 25 Kimi, 15 Qwen3-4B base, 15 Qwen3-4B fine-tuned) |
 | `results/eval_output.txt` | Output of `python3 -m pharmacy_env.eval` |
+| `training/` | Post-training: reference transcripts to SFT data, LoRA training script, notes |
 | `tests/test_env.py` | Determinism, gates, harness and replay, batch tracing, allergies, cold chain, supply channels |
 
 ## How the environment was calibrated
@@ -339,8 +408,8 @@ threshold on a two-week task), v3 (batch tracing and allergies), v4 (five tasks)
 ## Limitations
 
 - **Two models.** 25 runs of DeepSeek V4.1 Flash and 25 of Kimi K3.1 Pro (3 seeds plus 2 repeats on seed 0).
-  The main DeepSeek runs use reasoning effort none; the reasoning-high check is one run per task on
-  seed 0, and with it DeepSeek passes T2.
+  The main DeepSeek runs use reasoning effort none; with reasoning high (15 runs) DeepSeek passes the
+  threshold twice (T2 seed 0, T3 seed 2).
   Earlier versions of the environment were run with Gemini 3.5 Flash with the same pattern,
   but those runs do not replay on the current world.
 - **T3 and T4 are model-dependent.** DeepSeek is below the reference in every T3 and T4 run, but
@@ -353,7 +422,8 @@ threshold on a two-week task), v3 (batch tracing and allergies), v4 (five tasks)
   that it lets 1-4 recalled or damaged units through, and Kimi beats its purchasing on T3 seed 2
   and T4 seed 1. We have not changed the reference after the Kimi runs.
 - **Synthetic data.** Demand, prices, par levels, patient mix and the cold-chain table are invented.
-- **Stretch goal not done.** Training a smaller model on reference trajectories is the next step.
+- **Post-training is behaviour cloning only.** The 4B model imitates the scripted reference; it
+  was not trained with the reward (no RL), and has three runs per task.
 - **Claude harness** passes its scripted test but has not been run against the live API.
 
 Anchor-policy calibration, the gate checks and the reward-hack catalogue approach follow StoreBench

@@ -21,6 +21,7 @@ class AuditEnv(Env):
         self.snapshots = []   # (shift, recalled stock still available by location, shortfall so far)
         self.read_at = {}     # notice id -> shift it was first read
         self.found = set()    # lots the agent looked up or quarantined
+        self.approved = set()  # products for which an alternative was ever approved (ward or patient)
 
     def call(self, name, args=None):
         args = args or {}
@@ -32,6 +33,8 @@ class AuditEnv(Env):
                 self.read_at.setdefault(n["id"], self.shift)
         if name in ("find_lot", "quarantine_lot") and "error" not in r:
             self.found.add(str(args.get("lot", "")).upper())
+        if name == "approve_substitution" and "ok" in r:
+            self.approved.add(str(args.get("product_code", "")).upper())
         return r
 
     def _snapshot(self):
@@ -91,11 +94,13 @@ def analyse(path):
         first = min(u["shift"] for u in env.usage_log if u["ward"] == ward and u["drug"] == drug and u["unmet"])
         findings.append(("critical_shortage", first, "%s could not issue %d x %s (first in shift %d)"
                          % (ward, units, drug, first + 1)))
-    for drug, (start, end) in env.task.get("suspended", {}).items():
-        alts = W.ALTERNATIVES.get(drug)
-        if alts and not any(d == drug for (_, d, _) in env.substitutions):
+    suspended = env.task.get("suspended", {})
+    for drug, (start, end) in suspended.items():
+        # Only alternatives that are themselves still supplied are a real option.
+        alts = [a for a in W.ALTERNATIVES.get(drug, []) if a not in suspended]
+        if alts and drug not in env.approved:
             findings.append(("no_substitution_during_shortage", start,
-                             "%s routine supply suspended shifts %d-%d; no ward was approved %s"
+                             "%s routine supply suspended shifts %d-%d; no ward or patient was approved %s"
                              % (drug, start + 1, end + 1, "/".join(alts))))
     if env.metrics.get("contraindicated_given"):
         bad = defaultdict(int)

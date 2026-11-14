@@ -6,7 +6,7 @@ On-Call Pharmacist
 
 ## Punchline (max 200)
 
-A hospital pharmacy where a frontier agent lets recalled vials reach patients because it investigates before it acts, in all 25 runs scoring below a scripted pharmacist.
+A hospital pharmacy where frontier agents let recalled and damaged vials reach patients: in all 26 incident runs, more than a scripted pharmacist; 40/40 DeepSeek runs score below it.
 
 ## Challenge
 
@@ -22,12 +22,12 @@ Break the Agent (AfterQuery)
 
 **Reward.** Computed from the simulation, never judged. Score is normalised per seed: doing nothing = 0, reference pharmacist = 1.
 
-**Calibration.** Scripted anchors use the same functions, time and information as the agent: reference, reactive pharmacist (repairs shortages after they happen), SOP checklist, central-store-only, do-nothing, stop-early, and per-task exploit probes (withdraw everything, discard all refrigerated stock, approve the restricted alternative ward-wide, grant every request). Pass threshold = midpoint of the reference and the best other honest anchor. The calibration gates (ordering, judgment gap, threshold margin, exploit suppression, stopping early below the threshold) pass on every seed of every task.
+**Calibration.** Scripted anchors use the same functions, time and information as the agent: reference, reactive pharmacist (repairs shortages after they happen), SOP checklist, central-store-only, do-nothing, stop-early, and per-task exploit probes (withdraw everything, discard all refrigerated stock, approve the restricted alternative ward-wide, grant every request, hoard every critical medicine). Pass threshold = midpoint of the reference and the best other honest anchor. The calibration gates (ordering, judgment gap, threshold margin, exploit suppression, stopping early below the threshold) pass on every seed of every task.
 
-**Result.** DeepSeek V4.1 Flash, 25 runs (5 tasks x 3 seeds plus 2 repeats of one seed per task): **below the reference in 25/25, below the pass threshold in 22/25.** Mean scores: T1 0.70, T2 0.48, T3 0.73, T4 0.27, T5 0.65. A stronger model, Kimi K3.1 Pro (25 runs), is below the threshold in all 10 runs of T1 and T2 and 4 of 5 of T5 (recalled or damaged units reached patients in every T1 and T5 run), but passes the supply-planning tasks T3 and T4 in 8 of 10 runs. With reasoning switched on (effort high), DeepSeek stays below the threshold on four of five tasks; recalled units still reached patients in T1 and T5. Every trajectory replays to the exact recorded score.
+**Result.** DeepSeek V4.1 Flash, 40 runs (5 tasks x 3 seeds plus 2 repeats of seed 0 with reasoning off; 5 tasks x 3 seeds with reasoning effort high): **below the reference in 40/40, below the pass threshold in 35/40.** Kimi K3.1 Pro (25 runs, a stronger comparison model) is below the threshold in all 10 runs of T1 and T2 and 4 of 5 of T5, but solves the supply-planning tasks T3 and T4 in 8 of 10 runs. Patient safety without normalisation: in all 26 runs of the incident tasks T1 and T5, every model let more recalled or temperature-damaged units reach patients than the reference on the same seed (4-89 per run against 1-6). Every trajectory replays to the exact recorded score.
 
 **Failure modes:**
-1. *Investigates before it withdraws.* The issue log already shows where a recalled batch went; the model inspects cabinets one by one, runs out of desk time and defers the quarantine. Recalled units reached patients in every T1 and T5 run (10-89 per run; reference 0-3). One handover note opens "URGENT - CLASS II RECALL NOT YET ACTIONED (ran out of desk time)".
+1. *Investigates before it withdraws.* The issue log already shows where a recalled batch went; the model inspects cabinets one by one, runs out of desk time and defers the quarantine. Recalled units reached patients in every T1 and T5 run with reasoning off (10-89 per run; reference 0-6). One handover note opens "URGENT - CLASS II RECALL NOT YET ACTIONED (ran out of desk time)".
 2. *Does not follow a failed batch after it has moved.* After a freeze, handover restocking had already sent frozen insulin to the wards; the model withdraws only what is left in the fridge.
 3. *Under-supplies a confirmed need.* It refuses every reserve request in T4 but sends too little to wards in a genuine surge; in T2 patients still go without antibiotics, and in one run two doses reached penicillin-allergic patients.
 4. *Plans unevenly for announced shortages.* It sometimes orders ahead of an announced allocation and sometimes barely at all.
@@ -48,4 +48,4 @@ All information needed to do better is available through the functions; the refe
 
 ## Tech challenges
 
-The model runs used Verda's inference API, which fits the "Verda Compute Track" tech challenge (prizes are cloud credits). If entered, say so in the description: "All 55 agent runs used Verda's OpenAI-compatible inference API (DeepSeek V4.1 Flash and Kimi K3.1 Pro)."
+The model runs used Verda's inference API, which fits the "Verda Compute Track" tech challenge (prizes are cloud credits). If entered, say so in the description: "All 65 agent runs used Verda's OpenAI-compatible inference API (DeepSeek V4.1 Flash and Kimi K3.1 Pro)."
