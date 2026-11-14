@@ -120,7 +120,8 @@ def main():
         run = re.search(r"_run(\d+)\.jsonl$", p)
         # Runs with reasoning switched on are reported separately from the default runs.
         effort = summary.get("reasoning_effort")
-        label = summary.get("model") + ("" if effort in (None, "none") else " (%s)" % effort)
+        label = summary.get("model") + ("" if effort in (None, "none") else " (%s)" % effort) + \
+            (" +hint" if summary.get("hint") else "")
         scored.append((summary["task"], label, score, thr))
         print("  %-5s %-5s %-4s %-31s %-9s %6.2f %9s %7s  %s" % (
             summary["task"], summary["seed"], run.group(1) if run else "1", label,

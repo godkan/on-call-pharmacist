@@ -1,0 +1,28 @@
+name: check
+
+# On every push: run the tests, re-run every anchor and gate, and replay every recorded
+# trajectory (python3 -m pharmacy_env.eval exits non-zero if a gate or a replay fails).
+# Standard library only; no API keys.
+
+on:
+  push:
+  pull_request:
+
+jobs:
+  check:
+    runs-on: ubuntu-latest
+    strategy:
+      matrix:
+        python-version: ["3.9", "3.12"]
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-python@v5
+        with:
+          python-version: ${{ matrix.python-version }}
+      - name: Tests
+        run: python -m unittest discover tests
+      - name: Anchors, gates and trajectory replay
+        run: python -m pharmacy_env.eval > eval_output.txt; status=$?; tail -n 3 eval_output.txt; exit $status
+      - name: Saved evaluation output is up to date
+        if: matrix.python-version == '3.9'
+        run: diff eval_output.txt results/eval_output.txt

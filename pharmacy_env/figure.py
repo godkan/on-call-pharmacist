@@ -22,7 +22,8 @@ INK, INK2, GRID, SURFACE = "#0b0b0b", "#52514e", "#e4e3df", "#fcfcfb"
 
 
 def parse(path):
-    runs, thresholds = defaultdict(list), {}
+    """Per-run scores, per-task thresholds and the per-task means printed by the evaluation."""
+    runs, thresholds, means = defaultdict(list), {}, {}
     task = None
     for line in open(path):
         m = re.match(r"^(T\d|C\d)\s+seed0", line)
@@ -34,10 +35,14 @@ def parse(path):
         m = re.match(r"^\s+(T\d)\s+(\d)\s+(\d+)\s+(.+?)\s+(handover|full)\s+(-?[\d.]+)\s", line)
         if m:
             runs[(m.group(1), m.group(4).strip())].append((int(m.group(2)), float(m.group(6))))
-    return runs, thresholds
+            continue
+        m = re.match(r"^\s+(T\d)\s+(.+?)\s+(\d+)\s+(-?[\d.]+)\s+-?[\d.]+\s+-?[\d.]+\s+\d+/\d+", line)
+        if m:
+            means[(m.group(1), m.group(2).strip())] = float(m.group(4))
+    return runs, thresholds, means
 
 
-def svg(runs, thresholds):
+def svg(runs, thresholds, means):
     W, H = 920, 490
     left, right, top, bottom = 56, 20, 92, 84
     pw, ph = W - left - right, H - top - bottom
@@ -83,7 +88,7 @@ def svg(runs, thresholds):
             if not rs:
                 continue
             x = cx0 + j * (bw + 2)
-            mean = sum(sc for _, sc in rs) / len(rs)
+            mean = means.get((task, key), sum(sc for _, sc in rs) / len(rs))
             top_y, base = y(max(mean, 0)), y(min(mean, 0))
             out.append('<path d="M%.1f %.1f V%.1f a4 4 0 0 1 4 -4 H%.1f a4 4 0 0 1 4 4 V%.1f Z" fill="%s" '
                        'fill-opacity="0.85"><title>%s, %s: mean %.2f over %d runs</title></path>'
@@ -108,9 +113,9 @@ def svg(runs, thresholds):
 def main():
     src = sys.argv[1] if len(sys.argv) > 1 else "results/eval_output.txt"
     dst = sys.argv[2] if len(sys.argv) > 2 else "results/scores.svg"
-    runs, thresholds = parse(src)
+    runs, thresholds, means = parse(src)
     with open(dst, "w") as f:
-        f.write(svg(runs, thresholds))
+        f.write(svg(runs, thresholds, means))
     print("wrote", dst)
 
 

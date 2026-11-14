@@ -141,9 +141,10 @@ def shift_start_message(env, memory):
     return "Your rota starts now: %s." % env.shift_label(0)
 
 
-def run(task_id, seed, model, base, key, out_path, temperature=0.0, max_steps=2000, max_nudges=2, memory="full"):
+def run(task_id, seed, model, base, key, out_path, temperature=0.0, max_steps=2000, max_nudges=2, memory="full",
+        hint=None):
     env = Env(TASKS[task_id](seed))
-    sysmsg = {"role": "system", "content": system_prompt(env, memory)}
+    sysmsg = {"role": "system", "content": system_prompt(env, memory, hint)}
     messages = [sysmsg, {"role": "user", "content": shift_start_message(env, memory)}]
     log = open(out_path, "w", buffering=1)  # line-buffered: trajectory survives a crash
     usage = {"prompt_tokens": 0, "completion_tokens": 0}
@@ -196,14 +197,23 @@ def run(task_id, seed, model, base, key, out_path, temperature=0.0, max_steps=20
     return finish(env, task_id, seed, log, steps, usage,
                   {"model": model, "temperature": temperature, "memory": memory, "base_url": base,
                    "max_steps": max_steps,
-                   "reasoning_effort": os.environ.get("LLM_REASONING_EFFORT")})
+                   "reasoning_effort": os.environ.get("LLM_REASONING_EFFORT"), "hint": hint})
 
 
-def system_prompt(env, memory="full"):
-    return (SYSTEM + (HANDOVER if memory == "handover" else "")).format(
+def system_prompt(env, memory="full", hint=None):
+    text = (SYSTEM + (HANDOVER if memory == "handover" else "")).format(
         hospital=W.HOSPITAL, start=env.shift_label(0), n=env.n_shifts, minutes=SHIFT_MINUTES,
         locs=", ".join("%s (%s)" % (k, v) for k, v in W.LOCATION_NAMES.items()),
         codes=", ".join("%s = %s" % (k, W.drug_name(k)) for k in env.products))
+    return text + ("\n\n" + hint if hint else "")
+
+
+# Ablation only (not used in the main runs): two sentences naming the judgment the models miss.
+HINT = ("Practice note: when a recall arrives, the central store issue log already shows which cabinets "
+        "received each affected batch, so quarantine it at those cabinets in the same shift and inspect on site "
+        "only where the log cannot tell you. After a refrigerator excursion, compare each batch's received time "
+        "with the excursion, and remember that stock issued from that refrigerator since the excursion may "
+        "already be in ward cabinets.")
 
 
 def finish(env, task_id, seed, log, steps, usage, config):
@@ -254,6 +264,7 @@ def main():
     ap.add_argument("--memory", choices=["full", "handover"], default="full",
                     help="full: whole conversation; handover: each shift sees only the previous handover note")
     ap.add_argument("--list-models", action="store_true", help="print model ids the API offers and exit")
+    ap.add_argument("--hint", action="store_true", help="ablation: append the practice note HINT to the system prompt")
     a = ap.parse_args()
     load_dotenv()
     base, key = os.environ["LLM_BASE_URL"], os.environ["LLM_API_KEY"]
@@ -262,9 +273,10 @@ def main():
         return
     model = os.environ["LLM_MODEL"]
     os.makedirs(a.out, exist_ok=True)
-    path = os.path.join(a.out, "%s_seed%d_%s_%s_%d_%d.jsonl" % (a.task, a.seed, model.replace("/", "_"), a.memory,
-                                                                int(time.time()), os.getpid()))
-    s = run(a.task, a.seed, model, base, key, path, a.temperature, max_steps=a.max_steps, memory=a.memory)
+    path = os.path.join(a.out, "%s_seed%d_%s_%s%s_%d_%d.jsonl" % (
+        a.task, a.seed, model.replace("/", "_"), a.memory, "_hint" if a.hint else "", int(time.time()), os.getpid()))
+    s = run(a.task, a.seed, model, base, key, path, a.temperature, max_steps=a.max_steps, memory=a.memory,
+            hint=HINT if a.hint else None)
     print(json.dumps({k: s[k] for k in ("task", "seed", "model", "score", "penalty", "tool_calls",
                                         "stopped_early", "usage")}, indent=1))
     print("trajectory:", path)

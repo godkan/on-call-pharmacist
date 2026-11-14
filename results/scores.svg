@@ -24,106 +24,126 @@
 <text x="48" y="140.9" font-size="11" fill="#52514e" text-anchor="end">1.0</text>
 <line x1="56" y1="136.9" x2="900" y2="136.9" stroke="#52514e" stroke-width="1.5"/>
 <text x="900" y="131.9" font-size="11" fill="#52514e" text-anchor="end">reference</text>
-<path d="M87.4 361.1 V207.7 a4 4 0 0 1 4 -4 H117.4 a4 4 0 0 1 4 4 V361.1 Z" fill="#2a78d6" fill-opacity="0.85"><title>T1, DeepSeek V4.1 Flash: mean 0.70 over 5 runs</title></path>
-<text x="104.4" y="420.0" font-size="11" fill="#0b0b0b" text-anchor="middle">0.70</text>
+<path d="M87.4 361.1 V196.9 a4 4 0 0 1 4 -4 H117.4 a4 4 0 0 1 4 4 V361.1 Z" fill="#2a78d6" fill-opacity="0.85"><title>T1, DeepSeek V4.1 Flash: mean 0.75 over 7 runs</title></path>
+<text x="104.4" y="420.0" font-size="11" fill="#0b0b0b" text-anchor="middle">0.75</text>
 <circle cx="104.4" cy="246.8" r="3.2" fill="#fcfcfb" stroke="#0b0b0b" stroke-width="1.5"/>
 <circle cx="109.4" cy="231.1" r="3.2" fill="#fcfcfb" stroke="#0b0b0b" stroke-width="1.5"/>
 <circle cx="99.4" cy="190.7" r="3.2" fill="#fcfcfb" stroke="#0b0b0b" stroke-width="1.5"/>
-<circle cx="109.4" cy="177.2" r="3.2" fill="#fcfcfb" stroke="#0b0b0b" stroke-width="1.5"/>
-<circle cx="99.4" cy="172.7" r="3.2" fill="#fcfcfb" stroke="#0b0b0b" stroke-width="1.5"/>
-<path d="M123.4 361.1 V173.0 a4 4 0 0 1 4 -4 H153.4 a4 4 0 0 1 4 4 V361.1 Z" fill="#eb6834" fill-opacity="0.85"><title>T1, DeepSeek V4.1 Flash, reasoning high: mean 0.86 over 3 runs</title></path>
-<text x="140.4" y="420.0" font-size="11" fill="#0b0b0b" text-anchor="middle">0.86</text>
+<circle cx="109.4" cy="181.7" r="3.2" fill="#fcfcfb" stroke="#0b0b0b" stroke-width="1.5"/>
+<circle cx="99.4" cy="177.2" r="3.2" fill="#fcfcfb" stroke="#0b0b0b" stroke-width="1.5"/>
+<circle cx="109.4" cy="172.7" r="3.2" fill="#fcfcfb" stroke="#0b0b0b" stroke-width="1.5"/>
+<circle cx="99.4" cy="152.6" r="3.2" fill="#fcfcfb" stroke="#0b0b0b" stroke-width="1.5"/>
+<path d="M123.4 361.1 V165.5 a4 4 0 0 1 4 -4 H153.4 a4 4 0 0 1 4 4 V361.1 Z" fill="#eb6834" fill-opacity="0.85"><title>T1, DeepSeek V4.1 Flash, reasoning high: mean 0.89 over 5 runs</title></path>
+<text x="140.4" y="420.0" font-size="11" fill="#0b0b0b" text-anchor="middle">0.89</text>
 <circle cx="140.4" cy="197.4" r="3.2" fill="#fcfcfb" stroke="#0b0b0b" stroke-width="1.5"/>
 <circle cx="145.4" cy="159.3" r="3.2" fill="#fcfcfb" stroke="#0b0b0b" stroke-width="1.5"/>
-<circle cx="135.4" cy="150.3" r="3.2" fill="#fcfcfb" stroke="#0b0b0b" stroke-width="1.5"/>
-<path d="M159.4 361.1 V174.9 a4 4 0 0 1 4 -4 H189.4 a4 4 0 0 1 4 4 V361.1 Z" fill="#1baf7a" fill-opacity="0.85"><title>T1, Kimi K3.1 Pro: mean 0.85 over 5 runs</title></path>
+<circle cx="135.4" cy="154.8" r="3.2" fill="#fcfcfb" stroke="#0b0b0b" stroke-width="1.5"/>
+<circle cx="145.4" cy="150.3" r="3.2" fill="#fcfcfb" stroke="#0b0b0b" stroke-width="1.5"/>
+<circle cx="135.4" cy="145.8" r="3.2" fill="#fcfcfb" stroke="#0b0b0b" stroke-width="1.5"/>
+<path d="M159.4 361.1 V174.5 a4 4 0 0 1 4 -4 H189.4 a4 4 0 0 1 4 4 V361.1 Z" fill="#1baf7a" fill-opacity="0.85"><title>T1, Kimi K3.1 Pro: mean 0.85 over 5 runs</title></path>
 <text x="176.4" y="420.0" font-size="11" fill="#0b0b0b" text-anchor="middle">0.85</text>
 <circle cx="176.4" cy="217.6" r="3.2" fill="#fcfcfb" stroke="#0b0b0b" stroke-width="1.5"/>
 <circle cx="181.4" cy="170.5" r="3.2" fill="#fcfcfb" stroke="#0b0b0b" stroke-width="1.5"/>
 <circle cx="171.4" cy="161.5" r="3.2" fill="#fcfcfb" stroke="#0b0b0b" stroke-width="1.5"/>
 <circle cx="181.4" cy="157.0" r="3.2" fill="#fcfcfb" stroke="#0b0b0b" stroke-width="1.5"/>
 <circle cx="171.4" cy="148.1" r="3.2" fill="#fcfcfb" stroke="#0b0b0b" stroke-width="1.5"/>
-<line x1="81.4" y1="137.6" x2="199.4" y2="137.6" stroke="#0b0b0b" stroke-width="2" stroke-dasharray="5 3"><title>T1 pass threshold 1.00</title></line>
+<line x1="81.4" y1="136.9" x2="199.4" y2="136.9" stroke="#0b0b0b" stroke-width="2" stroke-dasharray="5 3"><title>T1 pass threshold 1.00</title></line>
 <text x="140.4" y="446" font-size="13" font-weight="600" fill="#0b0b0b" text-anchor="middle">T1</text>
 <text x="140.4" y="463" font-size="11.5" fill="#52514e" text-anchor="middle">Safety incidents</text>
-<path d="M256.2 361.1 V258.4 a4 4 0 0 1 4 -4 H286.2 a4 4 0 0 1 4 4 V361.1 Z" fill="#2a78d6" fill-opacity="0.85"><title>T2, DeepSeek V4.1 Flash: mean 0.48 over 5 runs</title></path>
-<text x="273.2" y="420.0" font-size="11" fill="#0b0b0b" text-anchor="middle">0.48</text>
-<circle cx="273.2" cy="305.1" r="3.2" fill="#fcfcfb" stroke="#0b0b0b" stroke-width="1.5"/>
+<path d="M256.2 361.1 V284.4 a4 4 0 0 1 4 -4 H286.2 a4 4 0 0 1 4 4 V361.1 Z" fill="#2a78d6" fill-opacity="0.85"><title>T2, DeepSeek V4.1 Flash: mean 0.36 over 7 runs</title></path>
+<text x="273.2" y="420.0" font-size="11" fill="#0b0b0b" text-anchor="middle">0.36</text>
+<circle cx="273.2" cy="347.7" r="3.2" fill="#fcfcfb" stroke="#0b0b0b" stroke-width="1.5"/>
+<circle cx="278.2" cy="336.5" r="3.2" fill="#fcfcfb" stroke="#0b0b0b" stroke-width="1.5"/>
+<circle cx="268.2" cy="305.1" r="3.2" fill="#fcfcfb" stroke="#0b0b0b" stroke-width="1.5"/>
 <circle cx="278.2" cy="287.1" r="3.2" fill="#fcfcfb" stroke="#0b0b0b" stroke-width="1.5"/>
 <circle cx="268.2" cy="246.8" r="3.2" fill="#fcfcfb" stroke="#0b0b0b" stroke-width="1.5"/>
 <circle cx="278.2" cy="222.1" r="3.2" fill="#fcfcfb" stroke="#0b0b0b" stroke-width="1.5"/>
 <circle cx="268.2" cy="210.9" r="3.2" fill="#fcfcfb" stroke="#0b0b0b" stroke-width="1.5"/>
-<path d="M292.2 361.1 V217.1 a4 4 0 0 1 4 -4 H322.2 a4 4 0 0 1 4 4 V361.1 Z" fill="#eb6834" fill-opacity="0.85"><title>T2, DeepSeek V4.1 Flash, reasoning high: mean 0.66 over 3 runs</title></path>
-<text x="309.2" y="420.0" font-size="11" fill="#0b0b0b" text-anchor="middle">0.66</text>
+<path d="M292.2 361.1 V185.7 a4 4 0 0 1 4 -4 H322.2 a4 4 0 0 1 4 4 V361.1 Z" fill="#eb6834" fill-opacity="0.85"><title>T2, DeepSeek V4.1 Flash, reasoning high: mean 0.80 over 5 runs</title></path>
+<text x="309.2" y="420.0" font-size="11" fill="#0b0b0b" text-anchor="middle">0.80</text>
 <circle cx="309.2" cy="251.2" r="3.2" fill="#fcfcfb" stroke="#0b0b0b" stroke-width="1.5"/>
 <circle cx="314.2" cy="228.8" r="3.2" fill="#fcfcfb" stroke="#0b0b0b" stroke-width="1.5"/>
-<circle cx="304.2" cy="159.3" r="3.2" fill="#fcfcfb" stroke="#0b0b0b" stroke-width="1.5"/>
-<path d="M328.2 361.1 V234.2 a4 4 0 0 1 4 -4 H358.2 a4 4 0 0 1 4 4 V361.1 Z" fill="#1baf7a" fill-opacity="0.85"><title>T2, Kimi K3.1 Pro: mean 0.58 over 5 runs</title></path>
+<circle cx="304.2" cy="168.3" r="3.2" fill="#fcfcfb" stroke="#0b0b0b" stroke-width="1.5"/>
+<circle cx="314.2" cy="159.3" r="3.2" fill="#fcfcfb" stroke="#0b0b0b" stroke-width="1.5"/>
+<circle cx="304.2" cy="101.0" r="3.2" fill="#fcfcfb" stroke="#0b0b0b" stroke-width="1.5"/>
+<path d="M328.2 361.1 V235.1 a4 4 0 0 1 4 -4 H358.2 a4 4 0 0 1 4 4 V361.1 Z" fill="#1baf7a" fill-opacity="0.85"><title>T2, Kimi K3.1 Pro: mean 0.58 over 5 runs</title></path>
 <text x="345.2" y="420.0" font-size="11" fill="#0b0b0b" text-anchor="middle">0.58</text>
 <circle cx="345.2" cy="244.5" r="3.2" fill="#fcfcfb" stroke="#0b0b0b" stroke-width="1.5"/>
 <circle cx="350.2" cy="242.3" r="3.2" fill="#fcfcfb" stroke="#0b0b0b" stroke-width="1.5"/>
 <circle cx="340.2" cy="235.5" r="3.2" fill="#fcfcfb" stroke="#0b0b0b" stroke-width="1.5"/>
 <circle cx="350.2" cy="235.5" r="3.2" fill="#fcfcfb" stroke="#0b0b0b" stroke-width="1.5"/>
 <circle cx="340.2" cy="192.9" r="3.2" fill="#fcfcfb" stroke="#0b0b0b" stroke-width="1.5"/>
-<line x1="250.2" y1="180.2" x2="368.2" y2="180.2" stroke="#0b0b0b" stroke-width="2" stroke-dasharray="5 3"><title>T2 pass threshold 0.81</title></line>
+<line x1="250.2" y1="181.3" x2="368.2" y2="181.3" stroke="#0b0b0b" stroke-width="2" stroke-dasharray="5 3"><title>T2 pass threshold 0.80</title></line>
 <text x="309.2" y="446" font-size="13" font-weight="600" fill="#0b0b0b" text-anchor="middle">T2</text>
 <text x="309.2" y="463" font-size="11.5" fill="#52514e" text-anchor="middle">Shortage + allergies</text>
-<path d="M425.0 361.1 V202.3 a4 4 0 0 1 4 -4 H455.0 a4 4 0 0 1 4 4 V361.1 Z" fill="#2a78d6" fill-opacity="0.85"><title>T3, DeepSeek V4.1 Flash: mean 0.73 over 5 runs</title></path>
-<text x="442.0" y="420.0" font-size="11" fill="#0b0b0b" text-anchor="middle">0.73</text>
-<circle cx="442.0" cy="235.5" r="3.2" fill="#fcfcfb" stroke="#0b0b0b" stroke-width="1.5"/>
+<path d="M425.0 361.1 V226.1 a4 4 0 0 1 4 -4 H455.0 a4 4 0 0 1 4 4 V361.1 Z" fill="#2a78d6" fill-opacity="0.85"><title>T3, DeepSeek V4.1 Flash: mean 0.62 over 7 runs</title></path>
+<text x="442.0" y="420.0" font-size="11" fill="#0b0b0b" text-anchor="middle">0.62</text>
+<circle cx="442.0" cy="309.6" r="3.2" fill="#fcfcfb" stroke="#0b0b0b" stroke-width="1.5"/>
+<circle cx="447.0" cy="260.2" r="3.2" fill="#fcfcfb" stroke="#0b0b0b" stroke-width="1.5"/>
+<circle cx="437.0" cy="235.5" r="3.2" fill="#fcfcfb" stroke="#0b0b0b" stroke-width="1.5"/>
 <circle cx="447.0" cy="219.8" r="3.2" fill="#fcfcfb" stroke="#0b0b0b" stroke-width="1.5"/>
 <circle cx="437.0" cy="217.6" r="3.2" fill="#fcfcfb" stroke="#0b0b0b" stroke-width="1.5"/>
 <circle cx="447.0" cy="168.3" r="3.2" fill="#fcfcfb" stroke="#0b0b0b" stroke-width="1.5"/>
 <circle cx="437.0" cy="150.3" r="3.2" fill="#fcfcfb" stroke="#0b0b0b" stroke-width="1.5"/>
-<path d="M461.0 361.1 V229.8 a4 4 0 0 1 4 -4 H491.0 a4 4 0 0 1 4 4 V361.1 Z" fill="#eb6834" fill-opacity="0.85"><title>T3, DeepSeek V4.1 Flash, reasoning high: mean 0.60 over 3 runs</title></path>
-<text x="478.0" y="420.0" font-size="11" fill="#0b0b0b" text-anchor="middle">0.60</text>
+<path d="M461.0 361.1 V221.6 a4 4 0 0 1 4 -4 H491.0 a4 4 0 0 1 4 4 V361.1 Z" fill="#eb6834" fill-opacity="0.85"><title>T3, DeepSeek V4.1 Flash, reasoning high: mean 0.64 over 5 runs</title></path>
+<text x="478.0" y="420.0" font-size="11" fill="#0b0b0b" text-anchor="middle">0.64</text>
 <circle cx="478.0" cy="253.5" r="3.2" fill="#fcfcfb" stroke="#0b0b0b" stroke-width="1.5"/>
 <circle cx="483.0" cy="231.1" r="3.2" fill="#fcfcfb" stroke="#0b0b0b" stroke-width="1.5"/>
+<circle cx="473.0" cy="201.9" r="3.2" fill="#fcfcfb" stroke="#0b0b0b" stroke-width="1.5"/>
+<circle cx="483.0" cy="201.9" r="3.2" fill="#fcfcfb" stroke="#0b0b0b" stroke-width="1.5"/>
 <circle cx="473.0" cy="192.9" r="3.2" fill="#fcfcfb" stroke="#0b0b0b" stroke-width="1.5"/>
-<path d="M497.0 361.1 V187.1 a4 4 0 0 1 4 -4 H527.0 a4 4 0 0 1 4 4 V361.1 Z" fill="#1baf7a" fill-opacity="0.85"><title>T3, Kimi K3.1 Pro: mean 0.79 over 5 runs</title></path>
+<path d="M497.0 361.1 V188.0 a4 4 0 0 1 4 -4 H527.0 a4 4 0 0 1 4 4 V361.1 Z" fill="#1baf7a" fill-opacity="0.85"><title>T3, Kimi K3.1 Pro: mean 0.79 over 5 runs</title></path>
 <text x="514.0" y="420.0" font-size="11" fill="#0b0b0b" text-anchor="middle">0.79</text>
 <circle cx="514.0" cy="231.1" r="3.2" fill="#fcfcfb" stroke="#0b0b0b" stroke-width="1.5"/>
 <circle cx="519.0" cy="228.8" r="3.2" fill="#fcfcfb" stroke="#0b0b0b" stroke-width="1.5"/>
 <circle cx="509.0" cy="175.0" r="3.2" fill="#fcfcfb" stroke="#0b0b0b" stroke-width="1.5"/>
 <circle cx="519.0" cy="157.0" r="3.2" fill="#fcfcfb" stroke="#0b0b0b" stroke-width="1.5"/>
 <circle cx="509.0" cy="123.4" r="3.2" fill="#fcfcfb" stroke="#0b0b0b" stroke-width="1.5"/>
-<line x1="419.0" y1="211.6" x2="537.0" y2="211.6" stroke="#0b0b0b" stroke-width="2" stroke-dasharray="5 3"><title>T3 pass threshold 0.67</title></line>
+<line x1="419.0" y1="211.8" x2="537.0" y2="211.8" stroke="#0b0b0b" stroke-width="2" stroke-dasharray="5 3"><title>T3 pass threshold 0.67</title></line>
 <text x="478.0" y="446" font-size="13" font-weight="600" fill="#0b0b0b" text-anchor="middle">T3</text>
 <text x="478.0" y="463" font-size="11.5" fill="#52514e" text-anchor="middle">Surges + budget</text>
-<path d="M593.8 361.1 V305.0 a4 4 0 0 1 4 -4 H623.8 a4 4 0 0 1 4 4 V361.1 Z" fill="#2a78d6" fill-opacity="0.85"><title>T4, DeepSeek V4.1 Flash: mean 0.27 over 5 runs</title></path>
-<text x="610.8" y="420.0" font-size="11" fill="#0b0b0b" text-anchor="middle">0.27</text>
+<path d="M593.8 361.1 V309.1 a4 4 0 0 1 4 -4 H623.8 a4 4 0 0 1 4 4 V361.1 Z" fill="#2a78d6" fill-opacity="0.85"><title>T4, DeepSeek V4.1 Flash: mean 0.25 over 7 runs</title></path>
+<text x="610.8" y="420.0" font-size="11" fill="#0b0b0b" text-anchor="middle">0.25</text>
 <circle cx="610.8" cy="332.0" r="3.2" fill="#fcfcfb" stroke="#0b0b0b" stroke-width="1.5"/>
 <circle cx="615.8" cy="327.5" r="3.2" fill="#fcfcfb" stroke="#0b0b0b" stroke-width="1.5"/>
+<circle cx="605.8" cy="325.3" r="3.2" fill="#fcfcfb" stroke="#0b0b0b" stroke-width="1.5"/>
+<circle cx="615.8" cy="302.8" r="3.2" fill="#fcfcfb" stroke="#0b0b0b" stroke-width="1.5"/>
 <circle cx="605.8" cy="284.9" r="3.2" fill="#fcfcfb" stroke="#0b0b0b" stroke-width="1.5"/>
 <circle cx="615.8" cy="282.6" r="3.2" fill="#fcfcfb" stroke="#0b0b0b" stroke-width="1.5"/>
 <circle cx="605.8" cy="278.2" r="3.2" fill="#fcfcfb" stroke="#0b0b0b" stroke-width="1.5"/>
-<path d="M629.8 361.1 V285.9 a4 4 0 0 1 4 -4 H659.8 a4 4 0 0 1 4 4 V361.1 Z" fill="#eb6834" fill-opacity="0.85"><title>T4, DeepSeek V4.1 Flash, reasoning high: mean 0.35 over 3 runs</title></path>
+<path d="M629.8 361.1 V286.6 a4 4 0 0 1 4 -4 H659.8 a4 4 0 0 1 4 4 V361.1 Z" fill="#eb6834" fill-opacity="0.85"><title>T4, DeepSeek V4.1 Flash, reasoning high: mean 0.35 over 5 runs</title></path>
 <text x="646.8" y="420.0" font-size="11" fill="#0b0b0b" text-anchor="middle">0.35</text>
 <circle cx="646.8" cy="314.0" r="3.2" fill="#fcfcfb" stroke="#0b0b0b" stroke-width="1.5"/>
+<circle cx="651.8" cy="284.9" r="3.2" fill="#fcfcfb" stroke="#0b0b0b" stroke-width="1.5"/>
+<circle cx="641.8" cy="282.6" r="3.2" fill="#fcfcfb" stroke="#0b0b0b" stroke-width="1.5"/>
 <circle cx="651.8" cy="266.9" r="3.2" fill="#fcfcfb" stroke="#0b0b0b" stroke-width="1.5"/>
 <circle cx="641.8" cy="264.7" r="3.2" fill="#fcfcfb" stroke="#0b0b0b" stroke-width="1.5"/>
-<path d="M665.8 361.1 V152.5 a4 4 0 0 1 4 -4 H695.8 a4 4 0 0 1 4 4 V361.1 Z" fill="#1baf7a" fill-opacity="0.85"><title>T4, Kimi K3.1 Pro: mean 0.95 over 5 runs</title></path>
+<path d="M665.8 361.1 V152.1 a4 4 0 0 1 4 -4 H695.8 a4 4 0 0 1 4 4 V361.1 Z" fill="#1baf7a" fill-opacity="0.85"><title>T4, Kimi K3.1 Pro: mean 0.95 over 5 runs</title></path>
 <text x="682.8" y="420.0" font-size="11" fill="#0b0b0b" text-anchor="middle">0.95</text>
 <circle cx="682.8" cy="172.7" r="3.2" fill="#fcfcfb" stroke="#0b0b0b" stroke-width="1.5"/>
 <circle cx="687.8" cy="161.5" r="3.2" fill="#fcfcfb" stroke="#0b0b0b" stroke-width="1.5"/>
 <circle cx="677.8" cy="145.8" r="3.2" fill="#fcfcfb" stroke="#0b0b0b" stroke-width="1.5"/>
 <circle cx="687.8" cy="141.3" r="3.2" fill="#fcfcfb" stroke="#0b0b0b" stroke-width="1.5"/>
 <circle cx="677.8" cy="121.2" r="3.2" fill="#fcfcfb" stroke="#0b0b0b" stroke-width="1.5"/>
-<line x1="587.8" y1="189.9" x2="705.8" y2="189.9" stroke="#0b0b0b" stroke-width="2" stroke-dasharray="5 3"><title>T4 pass threshold 0.76</title></line>
+<line x1="587.8" y1="190.2" x2="705.8" y2="190.2" stroke="#0b0b0b" stroke-width="2" stroke-dasharray="5 3"><title>T4 pass threshold 0.76</title></line>
 <text x="646.8" y="446" font-size="13" font-weight="600" fill="#0b0b0b" text-anchor="middle">T4</text>
 <text x="646.8" y="463" font-size="11.5" fill="#52514e" text-anchor="middle">Ward requests</text>
-<path d="M762.6 361.1 V219.8 a4 4 0 0 1 4 -4 H792.6 a4 4 0 0 1 4 4 V361.1 Z" fill="#2a78d6" fill-opacity="0.85"><title>T5, DeepSeek V4.1 Flash: mean 0.65 over 5 runs</title></path>
+<path d="M762.6 361.1 V219.4 a4 4 0 0 1 4 -4 H792.6 a4 4 0 0 1 4 4 V361.1 Z" fill="#2a78d6" fill-opacity="0.85"><title>T5, DeepSeek V4.1 Flash: mean 0.65 over 7 runs</title></path>
 <text x="779.6" y="420.0" font-size="11" fill="#0b0b0b" text-anchor="middle">0.65</text>
 <circle cx="779.6" cy="251.2" r="3.2" fill="#fcfcfb" stroke="#0b0b0b" stroke-width="1.5"/>
 <circle cx="784.6" cy="231.1" r="3.2" fill="#fcfcfb" stroke="#0b0b0b" stroke-width="1.5"/>
-<circle cx="774.6" cy="215.4" r="3.2" fill="#fcfcfb" stroke="#0b0b0b" stroke-width="1.5"/>
-<circle cx="784.6" cy="204.1" r="3.2" fill="#fcfcfb" stroke="#0b0b0b" stroke-width="1.5"/>
+<circle cx="774.6" cy="219.8" r="3.2" fill="#fcfcfb" stroke="#0b0b0b" stroke-width="1.5"/>
+<circle cx="784.6" cy="215.4" r="3.2" fill="#fcfcfb" stroke="#0b0b0b" stroke-width="1.5"/>
+<circle cx="774.6" cy="204.1" r="3.2" fill="#fcfcfb" stroke="#0b0b0b" stroke-width="1.5"/>
+<circle cx="784.6" cy="201.9" r="3.2" fill="#fcfcfb" stroke="#0b0b0b" stroke-width="1.5"/>
 <circle cx="774.6" cy="177.2" r="3.2" fill="#fcfcfb" stroke="#0b0b0b" stroke-width="1.5"/>
-<path d="M798.6 361.1 V176.0 a4 4 0 0 1 4 -4 H828.6 a4 4 0 0 1 4 4 V361.1 Z" fill="#eb6834" fill-opacity="0.85"><title>T5, DeepSeek V4.1 Flash, reasoning high: mean 0.84 over 3 runs</title></path>
-<text x="815.6" y="420.0" font-size="11" fill="#0b0b0b" text-anchor="middle">0.84</text>
+<path d="M798.6 361.1 V174.5 a4 4 0 0 1 4 -4 H828.6 a4 4 0 0 1 4 4 V361.1 Z" fill="#eb6834" fill-opacity="0.85"><title>T5, DeepSeek V4.1 Flash, reasoning high: mean 0.85 over 5 runs</title></path>
+<text x="815.6" y="420.0" font-size="11" fill="#0b0b0b" text-anchor="middle">0.85</text>
 <circle cx="815.6" cy="184.0" r="3.2" fill="#fcfcfb" stroke="#0b0b0b" stroke-width="1.5"/>
-<circle cx="820.6" cy="166.0" r="3.2" fill="#fcfcfb" stroke="#0b0b0b" stroke-width="1.5"/>
+<circle cx="820.6" cy="181.7" r="3.2" fill="#fcfcfb" stroke="#0b0b0b" stroke-width="1.5"/>
 <circle cx="810.6" cy="166.0" r="3.2" fill="#fcfcfb" stroke="#0b0b0b" stroke-width="1.5"/>
+<circle cx="820.6" cy="166.0" r="3.2" fill="#fcfcfb" stroke="#0b0b0b" stroke-width="1.5"/>
+<circle cx="810.6" cy="152.6" r="3.2" fill="#fcfcfb" stroke="#0b0b0b" stroke-width="1.5"/>
 <path d="M834.6 361.1 V165.5 a4 4 0 0 1 4 -4 H864.6 a4 4 0 0 1 4 4 V361.1 Z" fill="#1baf7a" fill-opacity="0.85"><title>T5, Kimi K3.1 Pro: mean 0.89 over 5 runs</title></path>
 <text x="851.6" y="420.0" font-size="11" fill="#0b0b0b" text-anchor="middle">0.89</text>
 <circle cx="851.6" cy="172.7" r="3.2" fill="#fcfcfb" stroke="#0b0b0b" stroke-width="1.5"/>
