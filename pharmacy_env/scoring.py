@@ -13,6 +13,7 @@ WEIGHTS = {
     "wrong_quarantine": 0.5,     # per good unit withdrawn
     "urgent_premium": 1 / 25.0,  # per EUR of urgent-order surcharge
     "missed_shift": 5.0,
+    "contraindicated": 15.0,     # per dose of an alternative given to a patient allergic to it
 }
 
 
@@ -27,6 +28,7 @@ def penalty(m):
         "wrong_quarantine": m["wrong_quarantine_units"] * WEIGHTS["wrong_quarantine"],
         "urgent_premium": m["urgent_premium"] * WEIGHTS["urgent_premium"],
         "missed_shifts": m["missed_shifts"] * WEIGHTS["missed_shift"],
+        "contraindicated": m.get("contraindicated_given", 0) * WEIGHTS["contraindicated"],
     }
     parts["total"] = sum(parts.values())
     return parts

@@ -6,7 +6,7 @@ On-Call Pharmacist
 
 ## Punchline (max 200)
 
-A two-week hospital pharmacy rota where frontier agents handle every drug recall correctly, yet read the flu warning and the shortage notice and still let wards run out of critical antibiotics.
+A two-week hospital pharmacy rota where a frontier agent lets recalled vials reach patients because it investigates before it acts, and reads the flu warning without ordering ahead.
 
 ## Challenge
 
@@ -14,22 +14,23 @@ Break the Agent (AfterQuery)
 
 ## Description (max 5000, markdown)
 
-**On-Call Pharmacist** is a reinforcement learning environment in which an agent works a two-week rota (28 shifts) as the on-duty pharmacist of a fictional regional hospital. Medicines are tracked by batch across a central store and five ward cabinets; wards keep using medicines whatever the agent does. The agent acts through 12 hospital-system functions (find a batch, quarantine it, transfer stock, approve a formulary alternative, place an urgent order, hand over with a note) under 120 minutes of desk time per shift.
+**On-Call Pharmacist** is a reinforcement learning environment in which an agent works a two-week rota (28 shifts) as the on-duty pharmacist of a fictional regional hospital. Medicines are tracked by batch across a central store and five ward cabinets, but cabinets record only products and quantities: to find a recalled batch the agent must read the central issue log or inspect cabinets on site. 65 patients receive ceftriaxone, some with penicillin allergies, and one formulary alternative is contraindicated for them. The agent acts through 15 hospital-system functions under 120 minutes of desk time per shift, and each shift sees only the previous shift's handover note.
 
-**Why this setting.** Hospital pharmacy is high-stakes operational work that agents have barely been tested on. It needs tracing across locations, exact procedure-following, and turning early warnings into action before the consequence arrives. Every outcome is checkable: was a recalled vial given to a patient, did a ward run out of a critical drug.
+**Why this setting.** Hospital pharmacy is high-stakes operational work that agents have barely been tested on. It needs tracing from records, exact procedure-following, patient-level constraints, and turning early warnings into action before the consequence arrives. Every outcome is checkable: was a recalled vial given to a patient, did an allergic patient get a contraindicated drug, did a ward run out of a critical medicine.
 
-**Reward.** Computed from the simulation, never judged: recalled units given after the notice, units a ward could not issue (critical drugs weighted, ICU/ED weighted higher), good stock wrongly withdrawn, urgent-order surcharge, and unattended shifts. Score is normalised per seed: doing nothing = 0, reference pharmacist = 1.
+**Reward.** Computed from the simulation, never judged: recalled units given after the notice, contraindicated doses, units a ward could not issue (critical drugs and ICU/ED weighted), good stock wrongly withdrawn, urgent-order surcharge, unattended shifts. Score is normalised per seed: doing nothing = 0, reference pharmacist = 1.
 
-**Calibration.** Six scripted anchors use the same functions, time and information as the agent (reference, SOP checklist, stop-early, central-store-only, do-nothing, and an exploit probe that withdraws every batch). The pass threshold is the midpoint of the two best honest anchors. Four gates pass on every seed: ordering, judgment gap, threshold margin, exploit suppression (the exploit scores below doing nothing).
+**Calibration.** Six scripted anchors use the same functions, time and information as the agent (reference, SOP checklist, stop-early, central-store-only, do-nothing, and an exploit probe that withdraws every batch). The pass threshold is the midpoint of the two best honest anchors. Four gates pass on every seed: ordering, judgment gap, threshold margin, exploit suppression.
 
-**Result.** Gemini 3.5 Flash scores **0.65 / 0.65 / 0.74** on three seeds against thresholds of 0.82 / 0.82 / 0.86 (reference 1.00). Every trajectory replays to the exact recorded score.
+**Result.** Gemini 3.5 Flash scores **0.79 / 0.70 / 0.73** on three seeds against thresholds of 0.89 / 0.86 / 0.90 (reference 1.00), at or below the rule-following anchor. Every trajectory replays to the exact recorded score.
 
-**Failure modes (same in all three runs):**
-1. *Reads the early warning, does not act.* It records the Infection Control memo in its handover note ("increased demand for PIP-45 and PCM-IV expected") but orders nothing; standing orders are sized for normal use, so ICU and Medical wards run out of piperacillin/tazobactam from shift 20 (87-114 units). Urgent orders over 28 shifts: 0, 0, 1.
-2. *Slow response to a confirmed shortage.* The ceftriaxone allocation notice arrives at shift 7-8 and names alternatives; approvals come at shifts 14-16, and wards run out from shift 17.
-3. *Desk time spent re-establishing context* after each handover (23-51 policy re-reads, 133-152 inventory lookups per run), which pushes urgent actions past the end of the shift.
+**Failure modes:**
+1. *Investigates before it withdraws.* When a recall arrives the issue log already shows where the batch went, and a quarantine takes 10 minutes. The model inspects cabinets one by one (15 minutes each), runs out of desk time and defers the quarantine; recalled units reach patients in every run (5, 12, 26; reference 0-3). In one run its handover note lists every location to quarantine "IMMEDIATELY IN SHIFT 4", written at the end of the shift in which it could have done it.
+2. *Reads the early warning, does not act.* It records the influenza memo but does not order ahead; ICU and Medical run out of piperacillin/tazobactam (58-121 units). Urgent orders over 28 shifts: 2-5.
+3. *Slow response to a confirmed shortage.* Ceftriaxone alternatives approved 7-13 shifts after the allocation notice in two of three runs.
+4. *Desk time spent re-establishing context* after each handover (40-49 policy re-reads per run).
 
-What it gets right: every recall is handled the shift it arrives, no recalled unit reaches a patient, and it ignores a distractor recall for a product the hospital does not stock. A shorter recall-only control task (T1) is solved perfectly, which shows the gap comes from planning ahead under limited memory, not from tool use.
+What it gets right: no allergic patient ever receives a contraindicated drug, it ignores a distractor recall, and it withdraws no good stock. On a recall-only control task with batches visible everywhere it matches the reference, which shows the gap comes from prioritisation and planning, not from tool use.
 
 All information needed to do better is available through the functions; the reference uses only that.
 

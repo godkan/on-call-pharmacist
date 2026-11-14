@@ -33,7 +33,9 @@ DRUGS = {
 }
 
 # Formulary-approved therapeutic alternatives (Pharmacy & Therapeutics Committee list F-3).
-ALTERNATIVES = {"CTX-1G": ["CTAX-1G"], "CTAX-1G": ["CTX-1G"]}
+ALTERNATIVES = {"CTX-1G": ["CTAX-1G", "PIP-45"], "CTAX-1G": ["CTX-1G"]}
+# Alternatives that must not be given to patients with this allergy.
+RESTRICTIONS = {"PIP-45": "penicillin"}
 
 CABINET_PAR_SHIFTS = 4      # ward cabinet par level = 4 shifts of mean use
 CENTRAL_PAR_SHIFTS = 12     # central store par level

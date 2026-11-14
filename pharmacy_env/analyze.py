@@ -88,6 +88,17 @@ def analyse(path):
             findings.append(("no_substitution_during_shortage", start,
                              "%s routine supply suspended shifts %d-%d; no ward was approved %s"
                              % (drug, start + 1, end + 1, "/".join(alts))))
+    if env.metrics.get("contraindicated_given"):
+        bad = defaultdict(int)
+        for u in env.usage_log:
+            if u.get("substitute_for") and u.get("patient") and u["qty"]:
+                p = next(p for p in env.patients if p["id"] == u["patient"])
+                if W.RESTRICTIONS.get(u["drug"]) in p["allergies"]:
+                    bad[(u["patient"], u["drug"], min(x["shift"] for x in env.usage_log
+                                                      if x.get("patient") == u["patient"] and x["drug"] == u["drug"]))] += u["qty"]
+        for (pid, drug, first), q in sorted(bad.items()):
+            findings.append(("allergy_contraindicated", first, "%s (%s allergy) given %d dose(s) of %s"
+                             % (pid, W.RESTRICTIONS[drug], q, drug)))
     if env.metrics["urgent_spend"]:
         findings.append(("urgent_orders", None, "urgent orders EUR %.0f (surcharge EUR %.0f)"
                          % (env.metrics["urgent_spend"], env.metrics["urgent_premium"])))

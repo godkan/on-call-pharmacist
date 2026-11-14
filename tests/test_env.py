@@ -91,6 +91,54 @@ class TestEnv(unittest.TestCase):
         self.assertAlmostEqual(got, want)
 
 
+class TestTracingAndPatients(unittest.TestCase):
+    def test_cabinets_hide_batches_in_t5(self):
+        env = Env(TASKS["T5"](0))
+        inv = env.call("list_inventory", {"location": "ICU", "product_code": "HEP-5K"})
+        self.assertTrue(all(r["lot"] == "not recorded by cabinet" for r in inv["stock"] if r["status"] == "available"))
+        lot = next(e["lot"] for e in env.stock if e["loc"] == "ICU" and e["drug"] == "HEP-5K")
+        self.assertTrue(all(r["location"] == "CENTRAL" for r in env.call("find_lot", {"lot": lot})["locations"]))
+        log = env.call("get_issue_log", {"product_code": "HEP-5K", "lot": lot})["entries"]
+        self.assertIn("ICU", [e["to"] for e in log])
+        found = env.call("inspect_cabinet", {"ward": "ICU", "product_code": "HEP-5K"})["found"]
+        self.assertIn(lot, [f["lot"] for f in found])
+
+    def test_empty_cabinet_visit_costs_time(self):
+        env = Env(TASKS["T5"](0))
+        before = env.minutes_left
+        r = env.call("quarantine_lot", {"lot": "NOSUCHLOT", "location": "PED"})
+        self.assertEqual(r["quarantined_units"], 0)
+        self.assertEqual(env.minutes_left, before - 10)
+
+    def _run_shortage(self, approve):
+        env = Env(TASKS["T5"](0))
+        allergic = [p for p in env.patients if "penicillin" in p["allergies"]]
+        ward = allergic[0]["ward"]
+        for e in env.stock:                      # empty the ward's ceftriaxone and cefotaxime
+            if e["loc"] == ward and e["drug"] in ("CTX-1G", "CTAX-1G"):
+                e["qty"] = 0
+        approve(env, ward)
+        env._consume()
+        return env.metrics["contraindicated_given"]
+
+    def test_ward_wide_restricted_approval_harms_allergic_patients(self):
+        def wardwide(env, ward):
+            env.call("approve_substitution", {"ward": ward, "product_code": "CTX-1G", "alternative_code": "PIP-45"})
+        env = Env(TASKS["T5"](0))
+        ward = next(p for p in env.patients if "penicillin" in p["allergies"])["ward"]
+        allergic_now = [p for p in env.active_patients(ward=ward, drug="CTX-1G") if "penicillin" in p["allergies"]]
+        if allergic_now:
+            self.assertGreater(self._run_shortage(wardwide), 0)
+
+    def test_per_patient_approval_avoids_allergic_patients(self):
+        def per_patient(env, ward):
+            for p in env.active_patients(ward=ward, drug="CTX-1G"):
+                if "penicillin" not in p["allergies"]:
+                    env.call("approve_substitution", {"ward": ward, "product_code": "CTX-1G",
+                                                      "alternative_code": "PIP-45", "patient_id": p["id"]})
+        self.assertEqual(self._run_shortage(per_patient), 0)
+
+
 class TestClaudeHarness(unittest.TestCase):
     def test_claude_loop_with_scripted_client(self):
         """Feed the reference policy's calls through the Claude loop via a fake client."""

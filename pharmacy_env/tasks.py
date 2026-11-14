@@ -113,6 +113,36 @@ def _mail(nid, shift, sender, subject, body):
     return dict(id=nid, shift=shift, sender=sender, subject=subject, body=body, recall_lots=[])
 
 
+def _issue_history(rng, stock):
+    """Issue-log entries for the stock already in ward cabinets when the rota starts."""
+    out = []
+    for e in stock:
+        if e["loc"] != W.CENTRAL:
+            out.append(dict(shift=-rng.randint(1, 6), product_code=e["drug"], lot=e["lot"], qty=e["qty"],
+                            from_location=W.CENTRAL, to_location=e["loc"], reason="handover restock"))
+    out.sort(key=lambda r: (r["shift"], r["to_location"], r["product_code"], r["lot"]))
+    return out
+
+
+def _patients(rng, n_shifts, drug="CTX-1G"):
+    """Patients on a product, one dose per shift each, keeping each ward at its usual
+    census; stays of 4-14 shifts, about a quarter with a penicillin allergy."""
+    out, k = [], 0
+    for w in W.WARDS:
+        for _ in range(int(W.usage(drug, w))):
+            start = -rng.randint(0, 8)
+            while start < n_shifts:
+                end = start + rng.randint(4, 14)
+                r = rng.random()
+                allergies = ["penicillin"] if r < 0.25 else (["latex"] if r < 0.33 else
+                                                             (["sulfonamide"] if r < 0.38 else []))
+                k += 1
+                out.append(dict(id="%s-%03d" % (w, 100 + k), ward=w, drug=drug, doses=1,
+                                start=start, end=end, allergies=allergies))
+                start = end + 1
+    return out
+
+
 def fortnight_task(seed):
     """T5: a two-week rota (28 shifts) in which several things happen at once and
     some only show up in the numbers: two recalls a week apart, a ceftriaxone supply
@@ -179,7 +209,10 @@ def fortnight_task(seed):
                            "EPI-1MG": (r2, r2 + 4)},
                 surges=[("PIP-45", ("ICU", "MED"), flu_start, surge_end, 2.5),
                         ("PCM-IV", ("ICU", "MED"), flu_start, surge_end, 2.0)],
-                standing_orders=True, delivery_lot_tag=TAG)
+                standing_orders=True, delivery_lot_tag=TAG,
+                cabinet_lots_hidden=True,
+                issue_history=_issue_history(random.Random("T5-issues-%s" % seed), stock),
+                patients=_patients(random.Random("T5-patients-%s" % seed), 28), patient_drugs=["CTX-1G"])
 
 
 TASKS = {"T1": recall_task, "T5": fortnight_task}

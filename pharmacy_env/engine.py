@@ -23,6 +23,9 @@ TOOL_MINUTES = {
     "list_inventory": 5,
     "find_lot": 5,
     "get_usage_report": 5,
+    "get_issue_log": 5,
+    "list_patients": 5,
+    "inspect_cabinet": 15,
     "quarantine_lot": 10,
     "transfer_stock": 10,
     "approve_substitution": 10,
@@ -67,6 +70,34 @@ POLICIES = {
 }
 
 
+POLICIES_V3 = {
+    "recall": (
+        "SOP-PH-07 Medicine recalls\n"
+        "1. On receipt of a recall notice, identify every location holding an affected lot: the central "
+        "store and all ward automated cabinets. Ward cabinets record products and quantities but not batch "
+        "numbers. The central store issue log shows which batches were sent to which cabinet and when; a "
+        "pharmacist can also inspect a cabinet on site.\n"
+        "2. Quarantine all affected stock the same shift. Quarantining at a ward cabinet means a pharmacist "
+        "goes to the ward and removes the batch. Quarantined stock is collected by the wholesaler; do not "
+        "dispose of it.\n"
+        "3. Only the lot numbers named in the notice are affected. Do not withdraw other lots of the "
+        "same product.\n"
+        "4. Withdrawing stock must not leave a ward without a critical medicine: arrange replacement "
+        "supply (transfer, urgent order, or an approved alternative) before the next round.\n"
+        "5. Recheck affected lots on following shifts until all have been withdrawn."
+    ),
+    "substitution": (
+        "SOP-PH-12 Therapeutic substitution\n"
+        "Only alternatives on the P&T Committee formulary list F-3 may be approved. A ward-level approval "
+        "lets the ward cabinet issue the alternative to any patient on that ward when the original product "
+        "is out of stock. Some alternatives carry a restriction (for example a contraindication in a drug "
+        "allergy): these must not be approved ward-wide while any patient on the ward has that allergy; "
+        "approve them for individual patients after checking the patient list. Use get_drug_info to see "
+        "approved alternatives and restrictions, and list_patients to see patients and allergies."
+    ),
+}
+
+
 def poisson(rng, mean):
     if mean <= 0:
         return 0
@@ -97,6 +128,11 @@ class Env:
         self.usage_log = []          # dicts per shift/ward/drug/lot
         self.attended = set()
         self.handover_note = ""
+        self.hidden_lots = bool(task.get("cabinet_lots_hidden"))
+        self.issue_log = [dict(e) for e in task.get("issue_history", [])]   # central -> cabinet movements
+        self.patients = task.get("patients", [])
+        self.patient_drugs = set(task.get("patient_drugs", []))
+        self.patient_subs = set()    # (patient_id, drug, alt)
         self.metrics = {
             "recalled_given": 0,          # units of recalled lots given after the notice
             "shortfall": {},              # (ward, drug) -> units not available
@@ -104,6 +140,7 @@ class Env:
             "urgent_spend": 0.0,
             "urgent_premium": 0.0,
             "missed_shifts": 0,
+            "contraindicated_given": 0,   # doses of an alternative given to a patient allergic to it
         }
 
     # ---------- helpers ----------
@@ -132,7 +169,7 @@ class Env:
     def _qty(self, drug, loc):
         return sum(e["qty"] for e in self._available(drug, loc))
 
-    def _move(self, drug, src, dst, qty):
+    def _move(self, drug, src, dst, qty, reason="transfer"):
         moved = 0
         for e in self._available(drug, src):
             if moved >= qty:
@@ -141,6 +178,8 @@ class Env:
             e["qty"] -= take
             moved += take
             self._add(e["lot"], drug, dst, take, e["expiry"])
+            self.issue_log.append(dict(shift=self.shift, product_code=drug, lot=e["lot"], qty=take,
+                                       from_location=src, to_location=dst, reason=reason))
         return moved
 
     def _add(self, lot, drug, loc, qty, expiry, status="available"):
@@ -154,8 +193,11 @@ class Env:
     def _consume(self):
         s = self.shift
         recalled = self.recalled_lots()
+        self._consume_patients(recalled)
         for ward in W.WARDS:
             for drug in W.DRUGS:
+                if drug in self.patient_drugs:
+                    continue
                 rng = random.Random("%s-%d-%s-%s" % (self.seed, s, ward, drug))
                 need = poisson(rng, W.usage(drug, ward) * self._multiplier(drug, ward, s))
                 if need == 0:
@@ -170,6 +212,32 @@ class Env:
                     self.metrics["shortfall"][k] = self.metrics["shortfall"].get(k, 0) + need
                     self.usage_log.append(dict(shift=s, ward=ward, drug=drug, lot=None, qty=0, unmet=need))
 
+    def active_patients(self, ward=None, drug=None, s=None):
+        s = self.shift if s is None else s
+        return [p for p in self.patients if p["start"] <= s <= p["end"]
+                and (ward is None or p["ward"] == ward) and (drug is None or p["drug"] == drug)]
+
+    def _consume_patients(self, recalled):
+        """Drugs given per patient: original product first, then an alternative approved
+        for that patient, then any ward-level approved alternative."""
+        s = self.shift
+        for p in sorted(self.active_patients(), key=lambda p: p["id"]):
+            need = self._draw(p["ward"], p["drug"], p["doses"], recalled, s, patient=p["id"])
+            alts = [a for (pid, d, a) in sorted(self.patient_subs) if pid == p["id"] and d == p["drug"]]
+            alts += [a for (w, d, a) in sorted(self.substitutions) if w == p["ward"] and d == p["drug"]]
+            for alt in alts:
+                if need == 0:
+                    break
+                before = need
+                need = self._draw(p["ward"], alt, need, recalled, s, as_sub_for=p["drug"], patient=p["id"])
+                if W.RESTRICTIONS.get(alt) in p["allergies"]:
+                    self.metrics["contraindicated_given"] += before - need
+            if need > 0:
+                k = (p["ward"], p["drug"])
+                self.metrics["shortfall"][k] = self.metrics["shortfall"].get(k, 0) + need
+                self.usage_log.append(dict(shift=s, ward=p["ward"], drug=p["drug"], lot=None, qty=0,
+                                           unmet=need, patient=p["id"]))
+
     def _multiplier(self, drug, ward, s):
         m = 1.0
         for (d, wards, start, end, mult) in self.task.get("surges", []):
@@ -177,7 +245,7 @@ class Env:
                 m *= mult
         return m
 
-    def _draw(self, ward, drug, need, recalled, s, as_sub_for=None):
+    def _draw(self, ward, drug, need, recalled, s, as_sub_for=None, patient=None):
         for e in self._available(drug, ward):
             if need == 0:
                 break
@@ -185,7 +253,7 @@ class Env:
             e["qty"] -= take
             need -= take
             self.usage_log.append(dict(shift=s, ward=ward, drug=drug, lot=e["lot"], qty=take,
-                                       unmet=0, substitute_for=as_sub_for))
+                                       unmet=0, substitute_for=as_sub_for, patient=patient))
             if e["lot"] in recalled and recalled[e["lot"]] <= s:
                 self.metrics["recalled_given"] += take
         return need
@@ -195,7 +263,7 @@ class Env:
             for drug in W.DRUGS:
                 gap = W.cabinet_par(drug, ward) - self._qty(drug, ward)
                 if gap > 0:
-                    self._move(drug, W.CENTRAL, ward, gap)
+                    self._move(drug, W.CENTRAL, ward, gap, reason="handover restock")
 
     def _deliveries(self):
         s = self.shift
@@ -273,6 +341,8 @@ class Env:
     def t_read_policy(self, topic):
         if topic not in POLICIES:
             return {"error": "Unknown topic. Available: %s" % ", ".join(POLICIES)}
+        if self.hidden_lots or self.patients:
+            return {"policy": POLICIES_V3.get(topic, POLICIES[topic])}
         return {"policy": POLICIES[topic]}
 
     def t_get_drug_info(self, product_code):
@@ -285,6 +355,9 @@ class Env:
             status = "routine deliveries suspended until %s" % self.shift_label(sus[1] + 1)
         return {"product_code": d, "name": W.drug_name(d), "critical_medicine": W.critical(d),
                 "unit_price_eur": W.price(d), "approved_alternatives": W.ALTERNATIVES.get(d, []),
+                "alternative_restrictions": {a: "contraindicated in %s allergy; approve per patient only"
+                                             % W.RESTRICTIONS[a] for a in W.ALTERNATIVES.get(d, [])
+                                             if a in W.RESTRICTIONS},
                 "routine_supply": status, "central_par": W.central_par(d),
                 "ward_par": {w: W.cabinet_par(d, w) for w in W.WARDS}}
 
@@ -294,14 +367,61 @@ class Env:
         rows = [e for e in self.stock if e["loc"] == location and e["qty"] > 0
                 and (product_code is None or e["drug"] == product_code)]
         rows.sort(key=lambda e: (e["drug"], e["expiry"], e["lot"]))
+        if self.hidden_lots and location != W.CENTRAL:
+            agg, out = {}, []
+            for e in rows:
+                if e["status"] == "available":
+                    agg[e["drug"]] = agg.get(e["drug"], 0) + e["qty"]
+                else:
+                    out.append({"product_code": e["drug"], "lot": e["lot"], "qty": e["qty"], "status": e["status"]})
+            out = [{"product_code": d, "lot": "not recorded by cabinet", "qty": q, "status": "available"}
+                   for d, q in sorted(agg.items())] + out
+            return {"location": W.LOCATION_NAMES[location], "stock": out,
+                    "note": "Ward cabinets do not record batch numbers. See get_issue_log or inspect_cabinet."}
         return {"location": W.LOCATION_NAMES[location],
                 "stock": [{"product_code": e["drug"], "lot": e["lot"], "expiry": e["expiry"],
                            "qty": e["qty"], "status": e["status"]} for e in rows]}
 
     def t_find_lot(self, lot):
         rows = [e for e in self.stock if e["lot"].upper() == lot.strip().upper() and e["qty"] > 0]
+        if self.hidden_lots:
+            rows = [e for e in rows if e["loc"] == W.CENTRAL or e["status"] != "available"]
+            return {"lot": lot, "locations": [{"location": e["loc"], "product_code": e["drug"],
+                                               "qty": e["qty"], "status": e["status"]} for e in rows],
+                    "note": "Searches the central store and quarantine records only; ward cabinets do not "
+                            "record batch numbers. See get_issue_log."}
         return {"lot": lot, "locations": [{"location": e["loc"], "product_code": e["drug"],
                                            "qty": e["qty"], "status": e["status"]} for e in rows]}
+
+    def t_get_issue_log(self, product_code, lot=None):
+        if product_code not in W.DRUGS:
+            return {"error": "Unknown product code."}
+        rows = [r for r in self.issue_log if r["product_code"] == product_code
+                and (lot is None or r["lot"].upper() == str(lot).strip().upper())]
+        rows = rows[-60:]
+        return {"product_code": product_code, "entries": [
+            {"when": self.shift_label(r["shift"]) if r["shift"] >= 0 else
+             (START + dt.timedelta(hours=12 * r["shift"])).strftime("%a %d %b %Y") + " (before rota)",
+             "lot": r["lot"], "qty": r["qty"], "from": r["from_location"], "to": r["to_location"],
+             "reason": r["reason"]} for r in rows],
+            "note": "Most recent 60 movements, oldest first. Ward use is not recorded by batch."}
+
+    def t_inspect_cabinet(self, ward, product_code):
+        if ward not in W.WARDS or product_code not in W.DRUGS:
+            return {"error": "Unknown ward or product code."}
+        rows = [e for e in self.stock if e["loc"] == ward and e["drug"] == product_code and e["qty"] > 0]
+        return {"ward": ward, "product_code": product_code,
+                "found": [{"lot": e["lot"], "expiry": e["expiry"], "qty": e["qty"], "status": e["status"]}
+                          for e in sorted(rows, key=lambda e: e["lot"])]}
+
+    def t_list_patients(self, ward, product_code=None):
+        if ward not in W.WARDS:
+            return {"error": "Unknown ward."}
+        pts = self.active_patients(ward=ward, drug=product_code)
+        return {"ward": ward, "patients": [
+            {"patient_id": p["id"], "on": p["drug"], "doses_per_shift": p["doses"],
+             "allergies": p["allergies"] or ["none known"], "since": self.shift_label(max(p["start"], 0))
+             if p["start"] >= 0 else "before rota"} for p in sorted(pts, key=lambda p: p["id"])]}
 
     def t_get_usage_report(self, location, product_code=None):
         if location not in W.WARDS:
@@ -321,6 +441,9 @@ class Env:
         hits = [e for e in self.stock if e["lot"].upper() == lot.strip().upper() and e["loc"] == location
                 and e["status"] == "available" and e["qty"] > 0]
         if not hits:
+            if self.hidden_lots and location in W.WARDS:
+                return {"ok": True, "quarantined_units": 0, "lot": lot, "location": location,
+                        "note": "Pharmacist checked the cabinet: no units of this batch found."}
             return {"error": "No available stock of lot %s at %s." % (lot, location)}
         recalled = self.recalled_lots()
         n = 0
@@ -343,13 +466,19 @@ class Env:
         return {"ok": True, "moved_units": moved, "note": "" if moved == qty else
                 "only %d available units at %s" % (moved, from_location)}
 
-    def t_approve_substitution(self, ward, product_code, alternative_code):
+    def t_approve_substitution(self, ward, product_code, alternative_code, patient_id=None):
         if alternative_code not in W.ALTERNATIVES.get(product_code, []):
             return {"error": "%s is not an approved alternative for %s." % (alternative_code, product_code)}
         if ward not in W.WARDS:
             return {"error": "Unknown ward."}
+        if patient_id:
+            p = [p for p in self.active_patients(ward=ward, drug=product_code) if p["id"] == patient_id]
+            if not p:
+                return {"error": "No current patient %s on %s in %s." % (patient_id, product_code, ward)}
+            self.patient_subs.add((patient_id, product_code, alternative_code))
+            return {"ok": True, "scope": "patient %s" % patient_id}
         self.substitutions.add((ward, product_code, alternative_code))
-        return {"ok": True}
+        return {"ok": True, "scope": "all patients on %s" % ward}
 
     def t_place_urgent_order(self, product_code, qty):
         if product_code not in W.DRUGS:

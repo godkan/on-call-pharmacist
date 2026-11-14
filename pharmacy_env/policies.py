@@ -15,6 +15,65 @@ def _recall_lots_from(notices):
     return out
 
 
+class RecallTracker:
+    """Where a recalled batch may be. Uses find_lot for the central store and, when
+    cabinets do not record batches, the issue log to see which cabinets received it.
+    A cabinet counts as done only after a successful visit, and is visited again only
+    if the log later shows new issues of the batch to it. A batch with nothing left
+    to do is closed and no longer rechecked."""
+
+    def __init__(self, env):
+        self.env, self.lots, self.done, self.closed, self.cache = env, {}, {}, set(), {}
+
+    def register(self, notice):
+        drugs = _drugs_named(notice["subject"])
+        for lot in _recall_lots_from([notice]):
+            d = drugs[0] if drugs else None
+            found = self._look(lot, d)
+            if found:
+                self.lots[lot] = d
+                self.cache[lot] = found
+
+    def _look(self, lot, drug):
+        out = []
+        for r in self.env.call("find_lot", {"lot": lot}).get("locations", []):
+            if r["status"] == "available":
+                out.append((r["location"], None))      # seen directly: always act on it
+        if self.env.hidden_lots and drug:
+            counts = {}
+            for e in self.env.call("get_issue_log", {"product_code": drug, "lot": lot}).get("entries", []):
+                if e["to"] in W.WARDS:
+                    counts[e["to"]] = counts.get(e["to"], 0) + 1
+            out += sorted(counts.items())
+        return out
+
+    def places(self, lot, drug):
+        found = self.cache.pop(lot, None)
+        if found is None:
+            found = self._look(lot, drug)
+        return [(w, c) for w, c in found if c is None or c > self.done.get((lot, w), 0)]
+
+    def withdraw(self):
+        hits = []
+        for lot, drug in sorted(self.lots.items()):
+            if lot in self.closed:
+                continue
+            todo = self.places(lot, drug)
+            if not todo:
+                self.closed.add(lot)
+            for where, count in todo:
+                rank = -1e9 if where == W.CENTRAL else -W.usage(drug, where)
+                hits.append((rank, where, lot, count))
+        for _, where, lot, count in sorted(hits):
+            r = self.env.call("quarantine_lot", {"lot": lot, "location": where})
+            if "ok" in r and count is not None:
+                self.done[(lot, where)] = count
+
+
+def _unrestricted(alts):
+    return [a for a in alts if a not in W.RESTRICTIONS]
+
+
 def do_nothing(env):
     """Shows up every shift and hands over without acting."""
     while not env.done:
@@ -47,7 +106,11 @@ def blanket_quarantine(env):
                         drugs.add(d)
         for d in sorted(drugs):
             for loc in W.LOCATIONS:
-                for row in env.call("list_inventory", {"location": loc, "product_code": d}).get("stock", []):
+                if env.hidden_lots and loc != W.CENTRAL:
+                    rows = env.call("inspect_cabinet", {"ward": loc, "product_code": d}).get("found", [])
+                else:
+                    rows = env.call("list_inventory", {"location": loc, "product_code": d}).get("stock", [])
+                for row in rows:
                     if row["status"] == "available":
                         env.call("quarantine_lot", {"lot": row["lot"], "location": loc})
         env.call("end_shift")
@@ -62,16 +125,15 @@ def careful_pharmacist(env):
     """Reference run. Each shift: act on recalls (SOP-PH-07), watch every product a
     notice mentions, keep the central store covered, and refill cabinets emptied
     by a withdrawal. Uses only what the tools show."""
-    known_lots, watch, surge, subs_done = [], set(), set(), set()
+    tracker, watch, surge, subs_done = RecallTracker(env), set(), set(), set()
     while not env.done:
         new_recall_drugs = set()
         for n in env.call("read_notices")["notices"]:
             lots = _recall_lots_from([n])
-            for lot in lots:
-                locs = env.call("find_lot", {"lot": lot})["locations"]
-                if locs:
-                    known_lots.append(lot)
-                    new_recall_drugs.add(locs[0]["product_code"])
+            if lots:
+                before = set(tracker.lots)
+                tracker.register(n)
+                new_recall_drugs |= {tracker.lots[l] for l in set(tracker.lots) - before}
             if not lots:
                 named = _drugs_named(n["subject"] + " " + n["body"])
                 watch.update(named)
@@ -80,21 +142,14 @@ def careful_pharmacist(env):
         watch |= new_recall_drugs
         # 1. withdraw every recalled unit everywhere. Central first (handover restocking
         #    would otherwise spread it again), then wards by how fast they use the product.
-        hits = []
-        for lot in known_lots:
-            for loc in env.call("find_lot", {"lot": lot})["locations"]:
-                if loc["status"] == "available":
-                    rank = -1e9 if loc["location"] == W.CENTRAL else -W.usage(loc["product_code"], loc["location"])
-                    hits.append((rank, loc["location"], lot))
-        for _, where, lot in sorted(hits):
-            env.call("quarantine_lot", {"lot": lot, "location": where})
+        tracker.withdraw()
         # 2. supply status of watched products; approve alternatives when supply is interrupted
         interrupted = set()
         for d in sorted(watch):
             info = env.call("get_drug_info", {"product_code": d})
             if info.get("routine_supply", "normal") != "normal":
                 interrupted.add(d)
-                for alt in info.get("approved_alternatives", []):
+                for alt in _unrestricted(info.get("approved_alternatives", [])):
                     for w in W.WARDS:
                         if W.usage(d, w) and (w, d) not in subs_done:
                             if "ok" in env.call("approve_substitution",
@@ -129,24 +184,20 @@ def sop_checklist(env):
     """Rule-based anchor: does what the SOPs literally say (recall protocol,
     approve formulary alternatives when routine supply is suspended, refill
     cabinets after a withdrawal) but never plans ahead with urgent orders."""
-    known_lots, subs_done = [], set()
+    tracker, subs_done = RecallTracker(env), set()
     while not env.done:
         new_recall_drugs, supply_drugs = set(), set()
         for n in env.call("read_notices")["notices"]:
             lots = _recall_lots_from([n])
-            for lot in lots:
-                locs = env.call("find_lot", {"lot": lot})["locations"]
-                if locs:
-                    known_lots.append(lot)
-                    new_recall_drugs.add(locs[0]["product_code"])
+            if lots:
+                before = set(tracker.lots)
+                tracker.register(n)
+                new_recall_drugs |= {tracker.lots[l] for l in set(tracker.lots) - before}
             if not lots and ("suspended" in n["body"] or "allocation" in n["body"].lower()):
                 supply_drugs.update(_drugs_named(n["subject"]))
-        for lot in known_lots:
-            for loc in env.call("find_lot", {"lot": lot})["locations"]:
-                if loc["status"] == "available":
-                    env.call("quarantine_lot", {"lot": lot, "location": loc["location"]})
+        tracker.withdraw()
         for d in sorted(supply_drugs):
-            for alt in W.ALTERNATIVES.get(d, []):
+            for alt in _unrestricted(W.ALTERNATIVES.get(d, [])):
                 for w in W.WARDS:
                     if W.usage(d, w) and (w, d) not in subs_done:
                         env.call("approve_substitution", {"ward": w, "product_code": d, "alternative_code": alt})
