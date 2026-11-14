@@ -4,6 +4,9 @@ import re
 
 from . import world as W
 
+SURGE_BUDGETED = 1.3   # hospital-wide surge estimate when spending a fixed budget
+BUDGET_SHARE = 0.35    # one purchase spends at most this share of the budget left
+
 LOT_RE = re.compile(r"^\s*Lot\s+([A-Z0-9]+)\s*$", re.M)
 
 
@@ -95,10 +98,10 @@ def _request_is_supported(env, ward, drug):
 
 def _order(env, drug, qty):
     """Place an urgent order, shrinking it to the allocation cap or budget if refused.
-    With a budget, one order spends at most half of what is left, to keep a reserve."""
+    With a budget, one order spends at most BUDGET_SHARE of what is left, to keep a reserve."""
     left = env.call("get_status").get("urgent_order_budget_left_eur")
     if left is not None:
-        qty = min(qty, int(0.5 * left / (W.price(drug) * (1 + W.EMERGENCY_MARKUP))))
+        qty = min(qty, int(BUDGET_SHARE * left / (W.price(drug) * (1 + W.EMERGENCY_MARKUP))))
     for _ in range(3):
         if qty <= 0:
             return 0
@@ -116,6 +119,31 @@ def _order(env, drug, qty):
             continue
         return 0
     return 0
+
+
+def _buy(env, drug, qty, cover_shifts):
+    """Cheapest route that arrives in time: a free loan from the neighbouring hospital for
+    critical products, then the second wholesaler (+10%, two shifts) when stock lasts that
+    long, otherwise an urgent order (+40%, next shift)."""
+    qty = int(qty)
+    if qty <= 0:
+        return 0
+    got = 0
+    if W.critical(drug):
+        loan = min(qty, 10 - env.borrowed.get(drug, 0))
+        if loan > 0 and "ok" in env.call("borrow_from_hospital", {"product_code": drug, "qty": loan}):
+            got += loan
+    rest = qty - got
+    if rest <= 0:
+        return got
+    if cover_shifts >= 2.5:
+        left = env.call("get_status").get("urgent_order_budget_left_eur")
+        n = rest if left is None else min(rest, int(BUDGET_SHARE * left / (W.price(drug) * 1.10)))
+        n = max(n, int(100 / (W.price(drug) * 1.10)) + 1)        # minimum order value
+        if left is None or n * W.price(drug) * 1.10 <= left:
+            if "ok" in env.call("place_wholesaler_order", {"product_code": drug, "qty": n}):
+                return got + n
+    return got + _order(env, drug, rest)
 
 
 def _approve_per_patient(env, drug, done, wards=None):
@@ -344,22 +372,23 @@ def careful_pharmacist(env):
         for d in sorted(env.products, key=lambda d: (not W.critical(d), d)):
             if budgeted and not W.critical(d):
                 continue          # with a fixed budget, urgent money goes to critical medicines only
-            rate = W.total_usage(d) * (2.5 if d in surge else 1.0)
+            # with a fixed budget, estimate a surge tightly (it affects only some wards) to keep money in reserve
+            rate = W.total_usage(d) * ((SURGE_BUDGETED if env.budget is not None else 2.5) if d in surge else 1.0)
             if d in resume and d not in surge:
                 # bridge the gap: what wards will use until routine supply resumes
                 need = rate * max(1, resume[d] - env.shift + 1)
                 if central.get(d, 0) < need:
-                    _order(env, d, int(min(3 * W.central_par(d), need - central.get(d, 0))))
+                    _buy(env, d, int(min(3 * W.central_par(d), need - central.get(d, 0))), central.get(d, 0) / rate)
                 continue
             if d in cold_withdrawn and not (d in interrupted or d in surge or d in allocated):
                 # routine supply still runs: only bridge to the next delivery
                 if central.get(d, 0) < 2 * rate:
-                    _order(env, d, int(4 * rate - central.get(d, 0)))
+                    _buy(env, d, int(4 * rate - central.get(d, 0)), central.get(d, 0) / rate)
                 continue
             low = central.get(d, 0) < 6 * rate
             if (d in interrupted or d in surge or d in allocated) and low:
                 target = (6 if budgeted else 10) * rate
-                _order(env, d, int(min(3 * W.central_par(d), target - central.get(d, 0))))
+                _buy(env, d, int(min(3 * W.central_par(d), target - central.get(d, 0))), central.get(d, 0) / rate)
         # 4. refill cabinets left short by this shift's withdrawals
         for d in sorted(new_recall_drugs):
             for w in W.WARDS:

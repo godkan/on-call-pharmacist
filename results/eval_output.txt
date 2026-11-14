@@ -3,11 +3,11 @@
 ==============================================================================
 
 T1            seed0  seed1  seed2  seed3  seed4    mean
-  discard_all_cold      0.86   0.82   0.84   0.83   0.85    0.84
+  discard_all_cold      0.86   0.83   0.84   0.83   0.85    0.84
   wardwide_alternatives  1.00   1.00   1.00   1.00   1.00    1.00
   grant_all_requests    1.00   1.00   1.00   1.00   1.00    1.00
-  stop_early           -0.04   0.62   0.58   0.65   0.66    0.50
-  sop_checklist         0.97   1.00   0.97   1.00   1.03    0.99
+  stop_early           -0.04   0.62   0.57   0.65   0.66    0.49
+  sop_checklist         0.96   1.00   0.97   1.00   1.02    0.99
   do_nothing            0.00   0.00   0.00   0.00   0.00    0.00
   central_only          0.24   0.38   0.34   0.25   0.20    0.28
   blanket_quarantine    0.54   0.39   0.47   0.60   0.50    0.50
@@ -32,7 +32,7 @@ T3            seed0  seed1  seed2  seed3  seed4    mean
   discard_all_cold      1.00   1.00   1.00   1.00   1.00    1.00
   wardwide_alternatives  1.00   1.00   1.00   1.00   1.00    1.00
   grant_all_requests    1.00   1.00   1.00   1.00   1.00    1.00
-  stop_early           -0.14  -0.18  -0.32  -1.54  -0.21   -0.48
+  stop_early           -0.07  -0.08  -0.11  -0.20  -0.11   -0.12
   sop_checklist         0.00   0.00   0.00   0.00   0.00    0.00
   do_nothing            0.00   0.00   0.00   0.00   0.00    0.00
   central_only          0.00   0.00   0.00   0.00   0.00    0.00
@@ -56,39 +56,320 @@ T4            seed0  seed1  seed2  seed3  seed4    mean
 
 T5            seed0  seed1  seed2  seed3  seed4    mean
   discard_all_cold      1.00   1.00   1.00   1.00   1.00    1.00
-  wardwide_alternatives  0.99   1.00   1.00   1.00   1.00    1.00
+  wardwide_alternatives  1.00   1.00   0.97   1.00   1.00    1.00
   grant_all_requests    1.00   1.00   1.00   1.00   1.00    1.00
-  stop_early            0.34   0.28   0.40   0.29   0.21    0.30
-  sop_checklist         0.71   0.65   0.78   0.59   0.79    0.71
+  stop_early            0.33   0.27   0.38   0.27   0.20    0.29
+  sop_checklist         0.70   0.62   0.74   0.56   0.76    0.68
   do_nothing            0.00   0.00   0.00   0.00   0.00    0.00
-  central_only          0.25   0.17   0.30   0.00   0.31    0.20
-  blanket_quarantine    0.12  -0.03   0.17  -0.15   0.15    0.05
+  central_only          0.24   0.16   0.29   0.00   0.29    0.20
+  blanket_quarantine    0.12  -0.03   0.17  -0.14   0.14    0.05
   careful_pharmacist    1.00   1.00   1.00   1.00   1.00    1.00
-  pass threshold        0.86   0.83   0.89   0.79   0.90
+  pass threshold        0.85   0.81   0.87   0.78   0.88
   gates (ordering, judgment gap, threshold margin, exploit suppression, stop-early below threshold): all passed
 
 C1            seed0  seed1  seed2  seed3  seed4    mean
   discard_all_cold      1.00   1.00   1.00   1.00   1.00    1.00
   wardwide_alternatives  1.00   1.00   1.00   1.00   1.00    1.00
   grant_all_requests    1.00   1.00   1.00   1.00   1.00    1.00
-  stop_early           -0.03   0.61   0.60   0.54   0.75    0.49
-  sop_checklist         0.95   1.00   0.97   1.00   0.99    0.98
+  stop_early           -0.04   0.60   0.60   0.54   0.75    0.49
+  sop_checklist         0.96   1.00   0.97   1.00   0.99    0.99
   do_nothing            0.00   0.00   0.00   0.00   0.00    0.00
   central_only          0.33   0.46   0.43   0.27   0.39    0.38
-  blanket_quarantine    0.54   0.35   0.42   0.47   0.33    0.42
+  blanket_quarantine    0.55   0.35   0.42   0.47   0.33    0.42
   careful_pharmacist    1.00   1.00   1.00   1.00   1.00    1.00
-  pass threshold        0.97   1.00   0.99   1.00   1.00
+  pass threshold        0.98   1.00   0.99   1.00   1.00
   gates: not claimed (control task)
 
 ==============================================================================
 2. Recorded model runs (replayed from results/trajectories)
 ==============================================================================
-  no trajectories found
 
   task  seed  model              memory      score  threshold  pass?  replay
+  T1    0     deepseek-4-1-flash-1017 handover     0.51       0.98  NO     MATCH
+  T1    1     deepseek-4-1-flash-1017 handover     0.82       1.00  NO     MATCH
+  T1    2     deepseek-4-1-flash-1017 handover     0.84       0.99  NO     MATCH
+  T2    0     deepseek-4-1-flash-1017 handover     0.62       0.59  yes    MATCH
+  T2    1     deepseek-4-1-flash-1017 handover     0.25       0.60  NO     MATCH
+  T2    2     deepseek-4-1-flash-1017 handover     0.67       0.65  yes    MATCH
+  T3    0     deepseek-4-1-flash-1017 handover     0.63       0.50  yes    MATCH
+  T3    1     deepseek-4-1-flash-1017 handover     0.56       0.50  yes    MATCH
+  T3    2     deepseek-4-1-flash-1017 handover     0.86       0.50  yes    MATCH
+  T4    0     deepseek-4-1-flash-1017 handover     0.13       0.50  NO     MATCH
+  T4    1     deepseek-4-1-flash-1017 handover     0.35       0.52  NO     MATCH
+  T4    2     deepseek-4-1-flash-1017 handover     0.37       0.51  NO     MATCH
+  T5    0     deepseek-4-1-flash-1017 handover     0.59       0.85  NO     MATCH
+  T5    1     deepseek-4-1-flash-1017 handover     0.73       0.81  NO     MATCH
+  T5    2     deepseek-4-1-flash-1017 handover     0.75       0.87  NO     MATCH
 
 ==============================================================================
 3. Failure modes per trajectory (shift numbers are 1-based)
 ==============================================================================
+
+  T1_seed0_deepseek-4-1-flash_handover.jsonl
+    [recalled_stock_left_in_use] shift 3: N-1102 (HP25C299) still available at handover: ED 4, MED 8, NIGHT 4, SURG 12, THEATRE 4
+    [recalled_stock_left_in_use] shift 8: N-1105 (EP24A981) still available at handover: CENTRAL 16, ED 16, ICU 7, MAT 4, MED 4, NIGHT 4, PED 4, SURG 4, THEATRE 4
+    [cold_chain_failed_batch_used] ED: up to 2 units of INS-REG batch IR25H490 given after it failed a refrigerator excursion
+    [cold_chain_failed_batch_used] ED: up to 2 units of SUX-100 batch SX26K04 given after it failed a refrigerator excursion
+    [cold_chain_failed_batch_used] ICU: up to 13 units of INS-REG batch IR25H490 given after it failed a refrigerator excursion
+    [cold_chain_failed_batch_used] MAT: up to 1 units of INS-REG batch IR25H490 given after it failed a refrigerator excursion
+    [cold_chain_failed_batch_used] MED: up to 14 units of INS-GLA batch IG24H407 given after it failed a refrigerator excursion
+    [cold_chain_failed_batch_used] MED: up to 6 units of INS-REG batch IR25H490 given after it failed a refrigerator excursion
+    [cold_chain_failed_batch_used] NIGHT: up to 1 units of INS-REG batch IR25H490 given after it failed a refrigerator excursion
+    [cold_chain_failed_batch_used] PED: up to 1 units of INS-GLA batch IG24H407 given after it failed a refrigerator excursion
+    [cold_chain_failed_batch_used] PED: up to 1 units of INS-REG batch IR25H490 given after it failed a refrigerator excursion
+    [cold_chain_failed_batch_used] SURG: up to 5 units of INS-GLA batch IG24H407 given after it failed a refrigerator excursion
+    [cold_chain_failed_batch_used] SURG: up to 1 units of INS-REG batch IR25H490 given after it failed a refrigerator excursion
+    [cold_chain_failed_batch_used] SURG: up to 10 units of SUX-100 batch SX25B332 given after it failed a refrigerator excursion
+    [critical_shortage] shift 7: SURG could not issue 10 x HEP-5K (first in shift 7)
+    [critical_shortage] shift 3: ICU could not issue 9 x HEP-5K (first in shift 3)
+    [critical_shortage] shift 5: MED could not issue 5 x HEP-5K (first in shift 5)
+    [critical_shortage] shift 3: ICU could not issue 1 x SUX-100 (first in shift 3)
+    [critical_shortage] shift 4: MED could not issue 1 x AMIO-150 (first in shift 4)
+    [critical_shortage] shift 5: ICU could not issue 1 x ATR-600 (first in shift 5)
+    [critical_shortage] shift 9: ED could not issue 1 x HEP-5K (first in shift 9)
+    [critical_shortage] shift 10: SURG could not issue 1 x EPI-1MG (first in shift 10)
+    [urgent_orders] urgent orders EUR 132 (surcharge EUR 38)
+
+  T1_seed1_deepseek-4-1-flash_handover.jsonl
+    [recalled_stock_left_in_use] shift 2: N-1102 (HP24G271) still available at handover: ED 4, MED 8, NIGHT 4, SURG 12, THEATRE 2
+    [recalled_stock_left_in_use] shift 7: N-1105 (EP24A302) still available at handover: ED 6, MAT 3, MED 4, NIGHT 4, SURG 3, THEATRE 3
+    [cold_chain_failed_batch_used] ED: up to 8 units of INS-REG batch IR24H623 given after it failed a refrigerator excursion
+    [cold_chain_failed_batch_used] ED: up to 7 units of SUX-100 batch SX24C452 given after it failed a refrigerator excursion
+    [cold_chain_failed_batch_used] ICU: up to 9 units of INS-REG batch IR24H623 given after it failed a refrigerator excursion
+    [cold_chain_failed_batch_used] ICU: up to 5 units of SUX-100 batch SX24C452 given after it failed a refrigerator excursion
+    [cold_chain_failed_batch_used] ICU: up to 7 units of SUX-100 batch SX24G874 given after it failed a refrigerator excursion
+    [cold_chain_failed_batch_used] ICU: up to 1 units of SUX-100 batch SX26K04 given after it failed a refrigerator excursion
+    [cold_chain_failed_batch_used] MAT: up to 7 units of INS-REG batch IR24H623 given after it failed a refrigerator excursion
+    [cold_chain_failed_batch_used] MAT: up to 19 units of OXY-10 batch OX25E782 given after it failed a refrigerator excursion
+    [cold_chain_failed_batch_used] MED: up to 4 units of INS-GLA batch IG24A990 given after it failed a refrigerator excursion
+    [cold_chain_failed_batch_used] MED: up to 4 units of INS-REG batch IR24H623 given after it failed a refrigerator excursion
+    [cold_chain_failed_batch_used] SURG: up to 2 units of INS-GLA batch IG24A990 given after it failed a refrigerator excursion
+    [cold_chain_failed_batch_used] SURG: up to 11 units of SUX-100 batch SX24C452 given after it failed a refrigerator excursion
+    [critical_shortage] shift 1: PED could not issue 3 x CTX-1G (first in shift 1)
+    [critical_shortage] shift 9: MED could not issue 3 x HEP-5K (first in shift 9)
+    [critical_shortage] shift 1: THEATRE could not issue 2 x PROT-50 (first in shift 1)
+    [critical_shortage] shift 3: ED could not issue 2 x HEP-5K (first in shift 3)
+    [critical_shortage] shift 8: NIGHT could not issue 1 x EPI-1MG (first in shift 8)
+    [critical_shortage] shift 9: THEATRE could not issue 1 x HEP-5K (first in shift 9)
+
+  T1_seed2_deepseek-4-1-flash_handover.jsonl
+    [recalled_stock_left_in_use] shift 2: N-1102 (HP24H245) still available at handover: ED 2, MED 8, NIGHT 2, SURG 12, THEATRE 4
+    [recalled_stock_left_in_use] shift 7: N-1105 (EP24B736) still available at handover: CENTRAL 55, ED 10, ICU 6, MAT 1, NIGHT 4, PED 3, SURG 1, THEATRE 4
+    [cold_chain_failed_batch_used] ED: up to 4 units of INS-REG batch IR24C743 given after it failed a refrigerator excursion
+    [cold_chain_failed_batch_used] ED: up to 10 units of SUX-100 batch SX24F921 given after it failed a refrigerator excursion
+    [cold_chain_failed_batch_used] ICU: up to 6 units of INS-REG batch IR24C743 given after it failed a refrigerator excursion
+    [cold_chain_failed_batch_used] MAT: up to 2 units of OXY-10 batch OX24G488 given after it failed a refrigerator excursion
+    [cold_chain_failed_batch_used] MAT: up to 2 units of SUX-100 batch SX26K04 given after it failed a refrigerator excursion
+    [cold_chain_failed_batch_used] MED: up to 11 units of INS-GLA batch IG24E292 given after it failed a refrigerator excursion
+    [cold_chain_failed_batch_used] SURG: up to 4 units of INS-GLA batch IG24E292 given after it failed a refrigerator excursion
+    [cold_chain_failed_batch_used] SURG: up to 5 units of INS-REG batch IR24C743 given after it failed a refrigerator excursion
+    [cold_chain_failed_batch_used] SURG: up to 13 units of SUX-100 batch SX24F921 given after it failed a refrigerator excursion
+    [critical_shortage] shift 8: ED could not issue 8 x EPI-1MG (first in shift 8)
+    [critical_shortage] shift 2: ICU could not issue 3 x HEP-5K (first in shift 2)
+    [critical_shortage] shift 3: SURG could not issue 3 x HEP-5K (first in shift 3)
+    [critical_shortage] shift 1: MAT could not issue 2 x EPI-1MG (first in shift 1)
+    [critical_shortage] shift 1: ED could not issue 1 x SUX-100 (first in shift 1)
+    [critical_shortage] shift 8: SURG could not issue 1 x VAN-1G (first in shift 8)
+    [critical_shortage] shift 10: ICU could not issue 1 x PROT-50 (first in shift 10)
+    [urgent_orders] urgent orders EUR 83 (surcharge EUR 24)
+
+  T2_seed0_deepseek-4-1-flash_handover.jsonl
+    [critical_shortage] shift 7: MED could not issue 33 x CTX-1G (first in shift 7)
+    [critical_shortage] shift 7: PED could not issue 16 x CTX-1G (first in shift 7)
+    [critical_shortage] shift 7: SURG could not issue 11 x CTX-1G (first in shift 7)
+    [critical_shortage] shift 8: ED could not issue 9 x CTX-1G (first in shift 8)
+    [critical_shortage] shift 7: MAT could not issue 8 x CTX-1G (first in shift 7)
+    [critical_shortage] shift 8: ICU could not issue 4 x CTX-1G (first in shift 8)
+    [critical_shortage] shift 3: ICU could not issue 1 x SUX-100 (first in shift 3)
+    [critical_shortage] shift 4: MED could not issue 1 x AMIO-150 (first in shift 4)
+    [critical_shortage] shift 5: ICU could not issue 1 x ATR-600 (first in shift 5)
+    [critical_shortage] shift 10: SURG could not issue 1 x EPI-1MG (first in shift 10)
+    [no_substitution_during_shortage] shift 2: CTX-1G routine supply suspended shifts 2-14; no ward was approved CTAX-1G/PIP-45
+    [no_substitution_during_shortage] shift 2: CTAX-1G routine supply suspended shifts 2-14; no ward was approved CTX-1G
+    [urgent_orders] urgent orders EUR 103 (surcharge EUR 29)
+
+  T2_seed1_deepseek-4-1-flash_handover.jsonl
+    [critical_shortage] shift 6: MED could not issue 43 x CTX-1G (first in shift 6)
+    [critical_shortage] shift 7: ED could not issue 30 x CTX-1G (first in shift 7)
+    [critical_shortage] shift 7: PED could not issue 24 x CTX-1G (first in shift 7)
+    [critical_shortage] shift 7: SURG could not issue 16 x CTX-1G (first in shift 7)
+    [critical_shortage] shift 6: MAT could not issue 9 x CTX-1G (first in shift 6)
+    [critical_shortage] shift 11: ICU could not issue 6 x CTX-1G (first in shift 11)
+    [critical_shortage] shift 1: ICU could not issue 1 x KCL-20 (first in shift 1)
+    [critical_shortage] shift 1: THEATRE could not issue 1 x PROT-50 (first in shift 1)
+    [no_substitution_during_shortage] shift 2: CTX-1G routine supply suspended shifts 2-14; no ward was approved CTAX-1G/PIP-45
+    [no_substitution_during_shortage] shift 2: CTAX-1G routine supply suspended shifts 2-14; no ward was approved CTX-1G
+    [urgent_orders] urgent orders EUR 97 (surcharge EUR 28)
+
+  T2_seed2_deepseek-4-1-flash_handover.jsonl
+    [critical_shortage] shift 10: ED could not issue 18 x CTX-1G (first in shift 10)
+    [critical_shortage] shift 8: MED could not issue 13 x CTX-1G (first in shift 8)
+    [critical_shortage] shift 8: PED could not issue 11 x CTX-1G (first in shift 8)
+    [critical_shortage] shift 7: MAT could not issue 8 x CTX-1G (first in shift 7)
+    [critical_shortage] shift 8: SURG could not issue 4 x VAN-1G (first in shift 8)
+    [critical_shortage] shift 1: MAT could not issue 3 x EPI-1MG (first in shift 1)
+    [critical_shortage] shift 1: ED could not issue 1 x SUX-100 (first in shift 1)
+    [critical_shortage] shift 10: ICU could not issue 1 x PROT-50 (first in shift 10)
+    [no_substitution_during_shortage] shift 2: CTAX-1G routine supply suspended shifts 2-14; no ward was approved CTX-1G
+    [allergy_contraindicated] shift 9: ED-108 (penicillin allergy) given 1 dose(s) of PIP-45
+    [allergy_contraindicated] shift 9: ED-110 (penicillin allergy) given 1 dose(s) of PIP-45
+    [urgent_orders] urgent orders EUR 103 (surcharge EUR 29)
+
+  T3_seed0_deepseek-4-1-flash_handover.jsonl
+    [critical_shortage] shift 18: ICU could not issue 42 x NOR-4MG (first in shift 18)
+    [critical_shortage] shift 15: ED could not issue 16 x NOR-4MG (first in shift 15)
+    [critical_shortage] shift 18: MED could not issue 2 x EPI-1MG (first in shift 18)
+    [critical_shortage] shift 3: ICU could not issue 1 x SUX-100 (first in shift 3)
+    [critical_shortage] shift 4: MED could not issue 1 x AMIO-150 (first in shift 4)
+    [critical_shortage] shift 5: ICU could not issue 1 x ATR-600 (first in shift 5)
+    [critical_shortage] shift 9: ICU could not issue 1 x PIP-45 (first in shift 9)
+    [critical_shortage] shift 10: SURG could not issue 1 x EPI-1MG (first in shift 10)
+    [critical_shortage] shift 18: ED could not issue 1 x INS-REG (first in shift 18)
+    [critical_shortage] shift 20: THEATRE could not issue 1 x NOR-4MG (first in shift 20)
+
+  T3_seed1_deepseek-4-1-flash_handover.jsonl
+    [critical_shortage] shift 17: ICU could not issue 34 x PIP-45 (first in shift 17)
+    [critical_shortage] shift 11: MED could not issue 22 x PIP-45 (first in shift 11)
+    [critical_shortage] shift 16: ED could not issue 8 x NOR-4MG (first in shift 16)
+    [critical_shortage] shift 16: ICU could not issue 7 x NOR-4MG (first in shift 16)
+    [critical_shortage] shift 1: PED could not issue 3 x CTX-1G (first in shift 1)
+    [critical_shortage] shift 1: THEATRE could not issue 2 x PROT-50 (first in shift 1)
+    [critical_shortage] shift 1: ICU could not issue 1 x KCL-20 (first in shift 1)
+    [critical_shortage] shift 16: THEATRE could not issue 1 x EPI-1MG (first in shift 16)
+    [urgent_orders] urgent orders EUR 1000 (surcharge EUR 354)
+
+  T3_seed2_deepseek-4-1-flash_handover.jsonl
+    [critical_shortage] shift 14: ICU could not issue 14 x NOR-4MG (first in shift 14)
+    [critical_shortage] shift 15: ED could not issue 9 x NOR-4MG (first in shift 15)
+    [critical_shortage] shift 18: THEATRE could not issue 5 x NOR-4MG (first in shift 18)
+    [critical_shortage] shift 8: SURG could not issue 4 x VAN-1G (first in shift 8)
+    [critical_shortage] shift 1: MAT could not issue 3 x EPI-1MG (first in shift 1)
+    [critical_shortage] shift 1: THEATRE could not issue 1 x HEP-5K (first in shift 1)
+    [critical_shortage] shift 10: ICU could not issue 1 x PROT-50 (first in shift 10)
+    [critical_shortage] shift 17: MED could not issue 1 x MEM-1G (first in shift 17)
+    [urgent_orders] urgent orders EUR 1529 (surcharge EUR 448)
+
+  T4_seed0_deepseek-4-1-flash_handover.jsonl
+    [critical_shortage] shift 7: ICU could not issue 191 x NOR-4MG (first in shift 7)
+    [critical_shortage] shift 8: ED could not issue 113 x EPI-1MG (first in shift 8)
+    [critical_shortage] shift 4: ICU could not issue 83 x EPI-1MG (first in shift 4)
+    [critical_shortage] shift 1: ED could not issue 10 x NOR-4MG (first in shift 1)
+    [critical_shortage] shift 8: MED could not issue 10 x EPI-1MG (first in shift 8)
+    [critical_shortage] shift 7: SURG could not issue 7 x EPI-1MG (first in shift 7)
+    [critical_shortage] shift 7: PED could not issue 6 x EPI-1MG (first in shift 7)
+    [critical_shortage] shift 13: THEATRE could not issue 3 x NOR-4MG (first in shift 13)
+    [critical_shortage] shift 14: THEATRE could not issue 2 x EPI-1MG (first in shift 14)
+    [critical_shortage] shift 14: NIGHT could not issue 2 x EPI-1MG (first in shift 14)
+    [critical_shortage] shift 3: ICU could not issue 1 x SUX-100 (first in shift 3)
+    [critical_shortage] shift 4: MED could not issue 1 x AMIO-150 (first in shift 4)
+    [critical_shortage] shift 5: ICU could not issue 1 x ATR-600 (first in shift 5)
+    [critical_shortage] shift 13: MAT could not issue 1 x EPI-1MG (first in shift 13)
+    [urgent_orders] urgent orders EUR 128 (surcharge EUR 36)
+
+  T4_seed1_deepseek-4-1-flash_handover.jsonl
+    [critical_shortage] shift 8: ED could not issue 112 x EPI-1MG (first in shift 8)
+    [critical_shortage] shift 3: ICU could not issue 57 x EPI-1MG (first in shift 3)
+    [critical_shortage] shift 2: ED could not issue 30 x NOR-4MG (first in shift 2)
+    [critical_shortage] shift 7: MED could not issue 13 x EPI-1MG (first in shift 7)
+    [critical_shortage] shift 9: THEATRE could not issue 7 x EPI-1MG (first in shift 9)
+    [critical_shortage] shift 9: THEATRE could not issue 7 x NOR-4MG (first in shift 9)
+    [critical_shortage] shift 12: SURG could not issue 5 x NOR-4MG (first in shift 12)
+    [critical_shortage] shift 9: MAT could not issue 4 x EPI-1MG (first in shift 9)
+    [critical_shortage] shift 10: SURG could not issue 4 x EPI-1MG (first in shift 10)
+    [critical_shortage] shift 12: PED could not issue 4 x EPI-1MG (first in shift 12)
+    [critical_shortage] shift 1: PED could not issue 3 x CTX-1G (first in shift 1)
+    [critical_shortage] shift 1: ICU could not issue 2 x KCL-20 (first in shift 1)
+    [critical_shortage] shift 1: THEATRE could not issue 2 x PROT-50 (first in shift 1)
+    [critical_shortage] shift 10: NIGHT could not issue 2 x EPI-1MG (first in shift 10)
+    [urgent_orders] urgent orders EUR 234 (surcharge EUR 67)
+
+  T4_seed2_deepseek-4-1-flash_handover.jsonl
+    [critical_shortage] shift 3: ICU could not issue 204 x NOR-4MG (first in shift 3)
+    [critical_shortage] shift 7: ED could not issue 96 x EPI-1MG (first in shift 7)
+    [critical_shortage] shift 3: ED could not issue 49 x NOR-4MG (first in shift 3)
+    [critical_shortage] shift 1: MAT could not issue 8 x EPI-1MG (first in shift 1)
+    [critical_shortage] shift 6: THEATRE could not issue 6 x NOR-4MG (first in shift 6)
+    [critical_shortage] shift 8: SURG could not issue 4 x VAN-1G (first in shift 8)
+    [critical_shortage] shift 9: SURG could not issue 4 x NOR-4MG (first in shift 9)
+    [critical_shortage] shift 11: THEATRE could not issue 2 x EPI-1MG (first in shift 11)
+    [critical_shortage] shift 12: PED could not issue 2 x EPI-1MG (first in shift 12)
+    [critical_shortage] shift 13: MED could not issue 2 x EPI-1MG (first in shift 13)
+    [critical_shortage] shift 1: ED could not issue 1 x SUX-100 (first in shift 1)
+    [critical_shortage] shift 10: ICU could not issue 1 x PROT-50 (first in shift 10)
+    [critical_shortage] shift 13: SURG could not issue 1 x EPI-1MG (first in shift 13)
+    [urgent_orders] urgent orders EUR 514 (surcharge EUR 147)
+
+  T5_seed0_deepseek-4-1-flash_handover.jsonl
+    [recalled_stock_left_in_use] shift 4: N-2002 (HP25A325) still available at handover: CENTRAL 11, ED 4, ICU 20, MED 8, NIGHT 4, SURG 12, THEATRE 4
+    [recalled_stock_left_in_use] shift 20: N-2009 (EP26K08, EP26K12) still available at handover: CENTRAL 34, ED 2, ICU 5, MAT 3, MED 2, NIGHT 1, PED 1, SURG 1, THEATRE 1
+    [critical_shortage] shift 20: ICU could not issue 84 x PIP-45 (first in shift 20)
+    [critical_shortage] shift 17: MED could not issue 38 x PIP-45 (first in shift 17)
+    [critical_shortage] shift 5: ICU could not issue 10 x HEP-5K (first in shift 5)
+    [critical_shortage] shift 20: PED could not issue 6 x PIP-45 (first in shift 20)
+    [critical_shortage] shift 21: ED could not issue 5 x EPI-1MG (first in shift 21)
+    [critical_shortage] shift 10: SURG could not issue 3 x EPI-1MG (first in shift 10)
+    [critical_shortage] shift 18: MED could not issue 3 x EPI-1MG (first in shift 18)
+    [critical_shortage] shift 25: PED could not issue 3 x EPI-1MG (first in shift 25)
+    [critical_shortage] shift 25: SURG could not issue 2 x PIP-45 (first in shift 25)
+    [critical_shortage] shift 3: ICU could not issue 1 x SUX-100 (first in shift 3)
+    [critical_shortage] shift 4: MED could not issue 1 x AMIO-150 (first in shift 4)
+    [critical_shortage] shift 5: ICU could not issue 1 x ATR-600 (first in shift 5)
+    [critical_shortage] shift 18: ED could not issue 1 x INS-REG (first in shift 18)
+    [critical_shortage] shift 21: ICU could not issue 1 x EPI-1MG (first in shift 21)
+    [critical_shortage] shift 21: ED could not issue 1 x PIP-45 (first in shift 21)
+    [critical_shortage] shift 24: THEATRE could not issue 1 x EPI-1MG (first in shift 24)
+    [critical_shortage] shift 25: ED could not issue 1 x HEP-5K (first in shift 25)
+    [critical_shortage] shift 27: ICU could not issue 1 x INS-REG (first in shift 27)
+    [critical_shortage] shift 28: MAT could not issue 1 x OXY-10 (first in shift 28)
+    [urgent_orders] urgent orders EUR 1567 (surcharge EUR 511)
+    [stopped_early] shift 27: agent stopped before the rota ended
+
+  T5_seed1_deepseek-4-1-flash_handover.jsonl
+    [recalled_stock_left_in_use] shift 3: N-2002 (HP24H105) still available at handover: CENTRAL 5, ED 4, ICU 20, MED 8, NIGHT 3, SURG 12, THEATRE 3
+    [recalled_stock_left_in_use] shift 19: N-2009 (EP26K08, EP26K12) still available at handover: ED 6, ICU 5, MAT 2, MED 3, PED 4, SURG 3, THEATRE 2
+    [critical_shortage] shift 25: ICU could not issue 28 x PIP-45 (first in shift 25)
+    [critical_shortage] shift 9: MED could not issue 8 x HEP-5K (first in shift 9)
+    [critical_shortage] shift 22: ICU could not issue 7 x EPI-1MG (first in shift 22)
+    [critical_shortage] shift 23: ED could not issue 7 x EPI-1MG (first in shift 23)
+    [critical_shortage] shift 12: SURG could not issue 6 x HEP-5K (first in shift 12)
+    [critical_shortage] shift 4: ICU could not issue 5 x HEP-5K (first in shift 4)
+    [critical_shortage] shift 16: THEATRE could not issue 5 x EPI-1MG (first in shift 16)
+    [critical_shortage] shift 1: THEATRE could not issue 3 x PROT-50 (first in shift 1)
+    [critical_shortage] shift 27: SURG could not issue 3 x EPI-1MG (first in shift 27)
+    [critical_shortage] shift 27: MED could not issue 3 x EPI-1MG (first in shift 27)
+    [critical_shortage] shift 9: THEATRE could not issue 2 x HEP-5K (first in shift 9)
+    [critical_shortage] shift 22: MAT could not issue 2 x EPI-1MG (first in shift 22)
+    [critical_shortage] shift 28: MED could not issue 2 x PIP-45 (first in shift 28)
+    [critical_shortage] shift 4: NIGHT could not issue 1 x HEP-5K (first in shift 4)
+    [no_substitution_during_shortage] shift 8: CTX-1G routine supply suspended shifts 8-20; no ward was approved CTAX-1G/PIP-45
+    [urgent_orders] urgent orders EUR 595 (surcharge EUR 478)
+    [stopped_early] shift 27: agent stopped before the rota ended
+
+  T5_seed2_deepseek-4-1-flash_handover.jsonl
+    [recalled_stock_left_in_use] shift 3: N-2002 (HP24D246) still available at handover: ED 4, MED 8, NIGHT 4, SURG 12, THEATRE 4
+    [recalled_stock_left_in_use] shift 19: N-2009 (EP26K08, EP26K12) still available at handover: ED 7, ICU 5, MAT 1, MED 3, NIGHT 2, PED 3, SURG 1, THEATRE 3
+    [critical_shortage] shift 21: ICU could not issue 40 x PIP-45 (first in shift 21)
+    [critical_shortage] shift 21: MED could not issue 15 x PIP-45 (first in shift 21)
+    [critical_shortage] shift 3: ICU could not issue 8 x HEP-5K (first in shift 3)
+    [critical_shortage] shift 1: MAT could not issue 5 x EPI-1MG (first in shift 1)
+    [critical_shortage] shift 24: ED could not issue 5 x EPI-1MG (first in shift 24)
+    [critical_shortage] shift 8: SURG could not issue 4 x VAN-1G (first in shift 8)
+    [critical_shortage] shift 25: SURG could not issue 4 x PIP-45 (first in shift 25)
+    [critical_shortage] shift 18: THEATRE could not issue 3 x NOR-4MG (first in shift 18)
+    [critical_shortage] shift 23: MED could not issue 3 x EPI-1MG (first in shift 23)
+    [critical_shortage] shift 4: ED could not issue 2 x HEP-5K (first in shift 4)
+    [critical_shortage] shift 22: PED could not issue 2 x EPI-1MG (first in shift 22)
+    [critical_shortage] shift 1: ED could not issue 1 x SUX-100 (first in shift 1)
+    [critical_shortage] shift 4: NIGHT could not issue 1 x HEP-5K (first in shift 4)
+    [critical_shortage] shift 10: ICU could not issue 1 x PROT-50 (first in shift 10)
+    [critical_shortage] shift 20: NIGHT could not issue 1 x EPI-1MG (first in shift 20)
+    [critical_shortage] shift 21: SURG could not issue 1 x NOR-4MG (first in shift 21)
+    [critical_shortage] shift 21: MED could not issue 1 x MEM-1G (first in shift 21)
+    [critical_shortage] shift 23: THEATRE could not issue 1 x HEP-5K (first in shift 23)
+    [critical_shortage] shift 24: THEATRE could not issue 1 x EPI-1MG (first in shift 24)
+    [critical_shortage] shift 25: ED could not issue 1 x ROC-50 (first in shift 25)
+    [critical_shortage] shift 25: SURG could not issue 1 x EPI-1MG (first in shift 25)
+    [urgent_orders] urgent orders EUR 770 (surcharge EUR 326)
+    [stopped_early] shift 26: agent stopped before the rota ended
 
 OVERALL: OK
