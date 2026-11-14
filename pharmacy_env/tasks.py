@@ -10,11 +10,11 @@ def _lot_code(rng, prefix):
     return "%s%d%s%03d" % (prefix, rng.choice([24, 25]), rng.choice("ABCDEFGH"), rng.randint(100, 999))
 
 
-def _initial_stock(rng):
+def _initial_stock(rng, products=None):
     """Two lots per product: an older one (A) and a newer one (B). Cabinets mostly
     hold the older lot because they were filled from central earlier."""
     stock, lots = [], {}
-    for d in W.DRUGS:
+    for d in (products or W.BASE_PRODUCTS):
         pre = W.DRUGS[d][4]
         a, b = _lot_code(rng, pre), _lot_code(rng, pre)
         while b == a:
@@ -239,12 +239,26 @@ def _routine_mail(rng, n_shifts):
     return out
 
 
+def _lot_at(seed, stock, shift, drug, loc):
+    """Batch of `drug` holding the most units at `loc` at the start of `shift` if nobody acts."""
+    from .engine import Env
+    env = Env(dict(name="probe", seed=seed, shifts=shift + 1, stock=stock, notices=[],
+                   delivery_lot_tag=TAG, products=sorted({e["drug"] for e in stock})))
+    while env.shift < shift:
+        env.call("end_shift")
+    held = {}
+    for e in env.stock:
+        if e["drug"] == drug and e["loc"] == loc and e["qty"] > 0:
+            held[e["lot"]] = held.get(e["lot"], 0) + e["qty"]
+    return max(sorted(held), key=lambda l: held[l])
+
+
 def _most_spread_lot(seed, stock, shift, drug):
     """Simulate the rota untouched up to `shift` and return the batch of `drug` held in the
     most ward cabinets (then most units), so the recall always concerns stock in use."""
     from .engine import Env
-    env = Env(dict(name="probe", seed="T1-%s" % seed, shifts=shift + 1, stock=stock, notices=[],
-                   delivery_lot_tag=TAG))
+    env = Env(dict(name="probe", seed=seed, shifts=shift + 1, stock=stock, notices=[],
+                   delivery_lot_tag=TAG, products=sorted({e["drug"] for e in stock})))
     while env.shift < shift:
         env.call("end_shift")
     held, wards = {}, {}
@@ -256,24 +270,52 @@ def _most_spread_lot(seed, stock, shift, drug):
     return max(sorted(held), key=lambda l: (len(wards.get(l, ())), held[l]))
 
 
+T1_PRODUCTS = W.BASE_PRODUCTS + ["SUX-100", "ROC-50"]
+
+
 def tracing_task(seed):
-    """T1 (5 days): two recalls with batch numbers not recorded in ward cabinets."""
+    """T1 (5 days): safety incidents. Two recalls with batch numbers not recorded in ward
+    cabinets, a warm excursion in a ward refrigerator that only one near-limit batch fails,
+    and a freeze in the central refrigerator that some products tolerate and others do not."""
     rng = random.Random("T1-%s" % seed)
-    stock, lots = _initial_stock(rng)
+    stock, lots = _initial_stock(rng, T1_PRODUCTS)
     r1, r2 = rng.choice([1, 2]), rng.choice([6, 7])
+    crng = random.Random("T1-cold-%s" % seed)
+    ward = crng.choice(["ICU", "SURG"])
+    k1, k2 = crng.choice([3, 5]), 7
+    hours_out = {}
+    for d in W.COLD_PRODUCTS:
+        for lot in lots[d]:
+            hours_out[lot] = crng.randint(0, 150)
+    # The batch of suxamethonium in the affected ward refrigerator that night is close to its limit.
+    near = _lot_at(seed, stock, k1, "SUX-100", ward)
+    hours_out[near] = W.COLD_RULES["SUX-100"]["max_hours"] - crng.randint(2, 5)
+    events = [dict(location=ward, shift=k1, start=crng.randint(1, 3), hours=crng.randint(7, 10),
+                   temp=round(crng.uniform(13, 17), 1)),
+              dict(location=W.CENTRAL, shift=k2, start=crng.randint(0, 3), hours=crng.randint(3, 5),
+                   temp=round(crng.uniform(-2.5, -1.5), 1))]
+    wardname = {"ICU": "ICU", "SURG": "Surgical Wards"}[ward]
     notices = _routine_mail(rng, 10) + [
-        _brief("Patient safety comes first this week. Any recalled medicine must be withdrawn from every "
-               "location before it can reach a patient, without leaving wards short of critical medicines."),
+        _brief("Patient safety comes first this week. Any recalled or compromised medicine must be withdrawn "
+               "from every location before it can reach a patient, without withdrawing medicines that are still "
+               "fit for use and without leaving wards short of critical medicines."),
         _recall_notice("N-1102", r1, "HEP-5K", [lots["HEP-5K"][0]],
                        "visible particulate matter found in retained samples", "II", rng),
         dict(_distractors(rng, lots)[1], shift=3),
         _recall_notice("N-1105", r2, "EPI-1MG", [_most_spread_lot(seed, stock, r2, "EPI-1MG")],
                        "ampoules may contain sub-potent product (assay failure at stability timepoint)", "II", rng),
+        _mail("N-1120", k1 + 1, "Night nurse in charge, %s" % wardname, "Medication fridge alarm overnight",
+              "The medication fridge alarm sounded during the night. The door had not closed properly; it is shut "
+              "now and reading 5 C. Please let us know if anything needs to be done."),
+        _mail("N-1121", k2 + 1, "Hospital Facilities", "Central pharmacy refrigerator: thermostat replaced",
+              "Engineers replaced a faulty thermostat on the central pharmacy medication refrigerator this morning "
+              "after a fault overnight. The unit is back in range."),
     ]
     notices.sort(key=lambda n: (n["shift"], n["id"]))
-    return dict(name="T1-tracing", seed=seed, shifts=10, stock=stock, notices=notices,
+    return dict(name="T1-incidents", seed=seed, shifts=10, stock=stock, notices=notices, products=T1_PRODUCTS,
                 suspended={"HEP-5K": (r1, r1 + 4), "EPI-1MG": (r2, r2 + 4)}, delivery_lot_tag=TAG,
-                cabinet_lots_hidden=True, issue_history=_issue_history(random.Random("T1-issues-%s" % seed), stock))
+                cabinet_lots_hidden=True, issue_history=_issue_history(random.Random("T1-issues-%s" % seed), stock),
+                cold_events=events, lot_hours_out=hours_out)
 
 
 def allergy_task(seed):

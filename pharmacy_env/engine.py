@@ -27,6 +27,8 @@ TOOL_MINUTES = {
     "list_patients": 5,
     "inspect_cabinet": 15,
     "revoke_substitution": 5,
+    "get_temperature_log": 5,
+    "get_lot_record": 5,
     "list_approvals": 5,
     "quarantine_lot": 10,
     "transfer_stock": 10,
@@ -88,6 +90,16 @@ POLICIES_V3_URGENT = (
     "gap and keep budget for critical medicines."
 )
 
+COLD_CHAIN_SOP = (
+    "SOP-PH-18 Cold chain\n"
+    "Refrigerated medicines are kept at 2-8 C in the medication refrigerator at each location. After a "
+    "temperature alarm or any reading outside 2-8 C, review that refrigerator's temperature log and assess "
+    "each refrigerated batch it held against the stability guidance in get_drug_info: the highest "
+    "temperature reached, whether it froze, and the batch's cumulative time outside 2-8 C (earlier time is in "
+    "the batch record, get_lot_record; add the hours of this excursion). Withdraw (quarantine) batches that "
+    "fail the guidance at that location only; batches that pass stay in use. Then arrange replacement supply."
+)
+
 POLICIES_V3 = {
     "recall": (
         "SOP-PH-07 Medicine recalls\n"
@@ -136,6 +148,7 @@ class Env:
         self.minutes_left = SHIFT_MINUTES
         self.done = False
         # stock entries: dict(lot, drug, loc, qty, status, expiry)
+        self.products = list(task.get("products", W.BASE_PRODUCTS))
         self.stock = [dict(e) for e in task["stock"]]
         self.notices = task["notices"]
         self.read_ids = set()
@@ -154,6 +167,9 @@ class Env:
         self.urgent_caps = task.get("urgent_caps", {})      # product -> max units per shift
         self.budget = task.get("urgent_budget")             # EUR for urgent orders, or None
         self.ordered_this_shift = {}
+        self.cold_events = task.get("cold_events", [])     # dict(location, shift, start, hours, temp)
+        self.lot_hours = task.get("lot_hours_out", {})     # lot -> hours outside 2-8 C before the rota
+        self.received = {}                                 # lot -> shift it arrived at the central store
         self.metrics = {
             "recalled_given": 0,          # units of recalled lots given after the notice
             "shortfall": {},              # (ward, drug) -> units not available
@@ -162,6 +178,7 @@ class Env:
             "urgent_premium": 0.0,
             "missed_shifts": 0,
             "contraindicated_given": 0,   # doses of an alternative given to a patient allergic to it
+            "damaged_given": 0,           # units given from a batch that failed a cold-chain excursion
         }
         if "critical_weight" in task:
             self.metrics["critical_weight"] = task["critical_weight"]
@@ -200,17 +217,21 @@ class Env:
             take = min(e["qty"], qty - moved)
             e["qty"] -= take
             moved += take
-            self._add(e["lot"], drug, dst, take, e["expiry"])
+            self._add(e["lot"], drug, dst, take, e["expiry"], damaged=e.get("damaged", False))
             self.issue_log.append(dict(shift=self.shift, product_code=drug, lot=e["lot"], qty=take,
                                        from_location=src, to_location=dst, reason=reason))
         return moved
 
-    def _add(self, lot, drug, loc, qty, expiry, status="available"):
+    def _add(self, lot, drug, loc, qty, expiry, status="available", damaged=False):
         for e in self.stock:
-            if e["lot"] == lot and e["loc"] == loc and e["status"] == status:
+            if e["lot"] == lot and e["loc"] == loc and e["status"] == status and \
+                    bool(e.get("damaged")) == bool(damaged):
                 e["qty"] += qty
                 return
-        self.stock.append(dict(lot=lot, drug=drug, loc=loc, qty=qty, status=status, expiry=expiry))
+        entry = dict(lot=lot, drug=drug, loc=loc, qty=qty, status=status, expiry=expiry)
+        if damaged:
+            entry["damaged"] = True
+        self.stock.append(entry)
 
     # ---------- world dynamics ----------
     def _consume(self):
@@ -218,7 +239,7 @@ class Env:
         recalled = self.recalled_lots()
         self._consume_patients(recalled)
         for ward in W.WARDS:
-            for drug in W.DRUGS:
+            for drug in self.products:
                 if drug in self.patient_drugs:
                     continue
                 rng = random.Random("%s-%d-%s-%s" % (self.seed, s, ward, drug))
@@ -279,11 +300,13 @@ class Env:
                                        unmet=0, substitute_for=as_sub_for, patient=patient))
             if e["lot"] in recalled and recalled[e["lot"]] <= s:
                 self.metrics["recalled_given"] += take
+            if e.get("damaged"):
+                self.metrics["damaged_given"] += take
         return need
 
     def _restock_cabinets(self):
         for ward in W.WARDS:
-            for drug in W.DRUGS:
+            for drug in self.products:
                 gap = W.cabinet_par(drug, ward) - self._qty(drug, ward)
                 if gap > 0:
                     self._move(drug, W.CENTRAL, ward, gap, reason="handover restock")
@@ -294,9 +317,10 @@ class Env:
             if o[0] == s:
                 _, drug, qty, lot = o
                 self._add(lot, drug, W.CENTRAL, qty, "2028-06-30")
+                self.received.setdefault(lot, s)
                 self.pending_orders.remove(o)
         if s % W.DELIVERY_EVERY_SHIFTS == 0 and s > 0:
-            for drug in W.DRUGS:
+            for drug in self.products:
                 sus = self.suspended.get(drug)
                 if sus and sus[0] <= s <= sus[1]:
                     continue
@@ -308,10 +332,12 @@ class Env:
                 if gap > 0:
                     lot = "%s%s%02d" % (W.DRUGS[drug][4], self.task["delivery_lot_tag"], s)
                     self._add(lot, drug, W.CENTRAL, gap, "2028-03-31")
+                    self.received.setdefault(lot, s)
 
     def _advance(self):
         self._consume()
         self._restock_cabinets()
+        self._apply_excursions(self.shift)
         self.shift += 1
         self.minutes_left = SHIFT_MINUTES
         self.ordered_this_shift = {}
@@ -319,6 +345,35 @@ class Env:
             self.done = True
             return
         self._deliveries()
+
+    def temperature(self, loc, hour):
+        """Medication refrigerator reading (C) at an absolute hour since the rota started."""
+        for ev in self.cold_events:
+            h0 = ev["shift"] * 12 + ev["start"]
+            if ev["location"] == loc and h0 <= hour < h0 + ev["hours"]:
+                r = random.Random("%s-ev-%s-%d" % (self.seed, loc, hour))
+                return round(ev["temp"] + r.uniform(-0.6, 0.6), 1)
+        r = random.Random("%s-t-%s-%d" % (self.seed, loc, hour))
+        return round(4.5 + r.uniform(-1.2, 1.4), 1)
+
+    def _apply_excursions(self, shift):
+        """At the end of the shift in which an excursion happened, mark every refrigerated
+        batch in that refrigerator that fails the guidance. Ground truth only; the agent
+        has to work this out from the log, the guidance and the batch record."""
+        for ev in self.cold_events:
+            if ev["shift"] != shift:
+                continue
+            temps = [self.temperature(ev["location"], ev["shift"] * 12 + ev["start"] + h) for h in range(ev["hours"])]
+            out_hours = sum(1 for t in temps if t > 8 or t < 2)
+            for e in self.stock:
+                rule = W.COLD_RULES.get(e["drug"])
+                if not rule or e["loc"] != ev["location"] or e["qty"] <= 0 or e["status"] != "available":
+                    continue
+                frozen = min(temps) < 0
+                fail = (frozen and rule["freeze"]) or max(temps) > rule["max_c"] or \
+                    self.lot_hours.get(e["lot"], 0) + out_hours > rule["max_hours"]
+                if fail:
+                    e["damaged"] = True
 
     def run_to_end(self):
         """Used when an agent stops early: remaining shifts run unattended."""
@@ -366,18 +421,20 @@ class Env:
         return {"notices": out}
 
     def t_read_policy(self, topic):
-        if topic not in POLICIES:
+        if topic not in POLICIES and not (topic == "cold_chain" and self.cold_events):
             return {"error": "Unknown topic. Available: %s" % ", ".join(POLICIES)}
         if topic == "urgent_order" and (self.urgent_caps or self.budget is not None):
             return {"policy": POLICIES_V3_URGENT}
+        if topic == "cold_chain" and self.cold_events:
+            return {"policy": COLD_CHAIN_SOP}
         if self.hidden_lots or self.patients:
             return {"policy": POLICIES_V3.get(topic, POLICIES[topic])}
         return {"policy": POLICIES[topic]}
 
     def t_get_drug_info(self, product_code):
         d = product_code
-        if d not in W.DRUGS:
-            return {"error": "Unknown product code. Known codes: %s" % ", ".join(W.DRUGS)}
+        if d not in self.products:
+            return {"error": "Unknown product code. Known codes: %s" % ", ".join(self.products)}
         sus = self.suspended.get(d)
         status = "normal"
         if sus and sus[0] <= self.shift <= sus[1]:
@@ -389,6 +446,11 @@ class Env:
                                              if a in W.RESTRICTIONS},
                 "routine_supply": status, "central_par": W.central_par(d),
                 **({"urgent_order_limit_per_shift": self.urgent_caps[d]} if d in self.urgent_caps else {}),
+                **({"storage": "Refrigerate 2-8 C. Excursions allowed up to %d C, cumulative %d hours outside 2-8 C "
+                               "over the life of the batch. %s" % (W.COLD_RULES[d]["max_c"], W.COLD_RULES[d]["max_hours"],
+                                                                   "Discard if frozen." if W.COLD_RULES[d]["freeze"]
+                                                                   else "Freezing does not affect this product.")}
+                   if d in W.COLD_RULES and self.cold_events else {}),
                 "ward_par": {w: W.cabinet_par(d, w) for w in W.WARDS}}
 
     def t_list_inventory(self, location, product_code=None):
@@ -424,7 +486,7 @@ class Env:
                                            "qty": e["qty"], "status": e["status"]} for e in rows]}
 
     def t_get_issue_log(self, product_code, lot=None):
-        if product_code not in W.DRUGS:
+        if product_code not in self.products:
             return {"error": "Unknown product code."}
         rows = [r for r in self.issue_log if r["product_code"] == product_code
                 and (lot is None or r["lot"].upper() == str(lot).strip().upper())]
@@ -436,8 +498,35 @@ class Env:
              "reason": r["reason"]} for r in rows],
             "note": "Most recent 60 movements, oldest first. Ward use is not recorded by batch."}
 
+    def t_get_temperature_log(self, location):
+        if location not in W.LOCATIONS:
+            return {"error": "Unknown location."}
+        now = self.shift * 12
+        rows = []
+        for h in range(max(0, now - 24), now):
+            t = START + dt.timedelta(hours=h)
+            rows.append({"time": t.strftime("%a %d %b %H:00"), "celsius": self.temperature(location, h)})
+        return {"location": W.LOCATION_NAMES[location] + " medication refrigerator", "last_24_hours": rows}
+
+    def t_get_lot_record(self, lot):
+        lot = str(lot).strip().upper()
+        drugs = sorted({e["drug"] for e in self.stock if e["lot"].upper() == lot} |
+                       {r["product_code"] for r in self.issue_log if r["lot"].upper() == lot})
+        if not drugs:
+            return {"error": "No record of batch %s." % lot}
+        d = drugs[0]
+        out = {"lot": lot, "product_code": d, "expiry": next((e["expiry"] for e in self.stock if e["lot"].upper() == lot), None)}
+        out["received_at_central_store"] = ((START + dt.timedelta(hours=12 * self.received[lot])).strftime("%a %d %b %H:00")
+                                            if lot in self.received else "before this rota")
+        if d in W.COLD_RULES:
+            out["hours_outside_2_8C_before_this_rota"] = self.lot_hours.get(lot, 0)
+            out["note"] = "Excursions during this rota are not yet added; see the refrigerator temperature logs."
+        else:
+            out["note"] = "Not a refrigerated product."
+        return out
+
     def t_inspect_cabinet(self, ward, product_code):
-        if ward not in W.WARDS or product_code not in W.DRUGS:
+        if ward not in W.WARDS or product_code not in self.products:
             return {"error": "Unknown ward or product code."}
         rows = [e for e in self.stock if e["loc"] == ward and e["drug"] == product_code and e["qty"] > 0]
         return {"ward": ward, "product_code": product_code,
@@ -480,14 +569,15 @@ class Env:
         for e in hits:
             qty = e["qty"]
             e["qty"] = 0
-            self._add(e["lot"], e["drug"], location, qty, e["expiry"], status="quarantined")
+            self._add(e["lot"], e["drug"], location, qty, e["expiry"], status="quarantined",
+                      damaged=e.get("damaged", False))
             n += qty
-            if e["lot"] not in recalled:
+            if e["lot"] not in recalled and not e.get("damaged"):
                 self.metrics["wrong_quarantine_units"] += qty
         return {"ok": True, "quarantined_units": n, "lot": lot, "location": location}
 
     def t_transfer_stock(self, product_code, from_location, to_location, qty):
-        if product_code not in W.DRUGS or from_location not in W.LOCATIONS or to_location not in W.LOCATIONS:
+        if product_code not in self.products or from_location not in W.LOCATIONS or to_location not in W.LOCATIONS:
             return {"error": "Unknown product code or location."}
         qty = int(qty)
         if qty <= 0 or from_location == to_location:
@@ -526,7 +616,7 @@ class Env:
                                   if ward is None or any(p["id"] == pid and p["ward"] == ward for p in self.patients)]}
 
     def t_place_urgent_order(self, product_code, qty):
-        if product_code not in W.DRUGS:
+        if product_code not in self.products:
             return {"error": "Unknown product code."}
         qty = int(qty)
         if qty <= 0 or qty > 3 * W.central_par(product_code):

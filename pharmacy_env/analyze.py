@@ -71,6 +71,15 @@ def analyse(path):
                                  "%s still available at handover: %s" % (
                                      label, ", ".join("%s %d" % kv for kv in sorted(missed.items())))))
                 break   # first handover where it was missed is enough
+    if env.metrics.get("damaged_given"):
+        bad = defaultdict(int)
+        for u in env.usage_log:
+            if u["lot"] and u["qty"] and any(e["lot"] == u["lot"] and e["loc"] == u["ward"] and e.get("damaged")
+                                             for e in env.stock):
+                bad[(u["ward"], u["drug"], u["lot"])] += u["qty"]
+        for (ward, drug, lot), q in sorted(bad.items()):
+            findings.append(("cold_chain_failed_batch_used", None, "%s: up to %d units of %s batch %s given after it "
+                             "failed a refrigerator excursion" % (ward, q, drug, lot)))
     if env.metrics["wrong_quarantine_units"]:
         findings.append(("good_stock_withdrawn", None, "%d units of non-recalled lots quarantined"
                          % env.metrics["wrong_quarantine_units"]))

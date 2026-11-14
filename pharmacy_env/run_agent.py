@@ -38,7 +38,7 @@ TOOLS = [
         {"include_read": {"type": "boolean", "description": "Also show messages already read."}}),
     _fn("read_policy", "Read a pharmacy standard operating procedure (5 min).",
         {"topic": {"type": "string", "enum": ["recall", "shortage", "substitution", "ward_requests",
-                                              "urgent_order"]}}, ["topic"]),
+                                              "urgent_order", "cold_chain"]}}, ["topic"]),
     _fn("get_drug_info", "Formulary entry: criticality, approved alternatives, routine supply status, par levels (5 min).",
         {"product_code": CODE}, ["product_code"]),
     _fn("list_inventory", "Stock by lot at one location, optionally one product (5 min).",
@@ -64,6 +64,10 @@ TOOLS = [
         {"ward": WARD, "product_code": CODE, "alternative_code": CODE,
          "patient_id": {"type": "string", "description": "Optional: approve for this patient only."}},
         ["ward", "product_code", "alternative_code"]),
+    _fn("get_temperature_log", "Hourly readings of a location's medication refrigerator, last 24 hours (5 min).",
+        {"location": LOC}, ["location"]),
+    _fn("get_lot_record", "Batch record: product, expiry, when it reached the central store, and cold-chain "
+        "history for refrigerated products (5 min).", {"lot": {"type": "string"}}, ["lot"]),
     _fn("list_approvals", "Active substitution approvals, ward-level and per patient (5 min).",
         {"ward": WARD}),
     _fn("revoke_substitution", "Withdraw a substitution approval for a ward or one patient (5 min).",
@@ -179,7 +183,7 @@ def system_prompt(env, memory="full"):
     return (SYSTEM + (HANDOVER if memory == "handover" else "")).format(
         hospital=W.HOSPITAL, start=env.shift_label(0), n=env.n_shifts, minutes=SHIFT_MINUTES,
         locs=", ".join("%s (%s)" % (k, v) for k, v in W.LOCATION_NAMES.items()),
-        codes=", ".join("%s = %s" % (k, W.drug_name(k)) for k in W.DRUGS))
+        codes=", ".join("%s = %s" % (k, W.drug_name(k)) for k in env.products))
 
 
 def finish(env, task_id, seed, log, steps, usage, config):

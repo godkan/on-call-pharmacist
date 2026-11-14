@@ -132,6 +132,67 @@ def _approve_per_patient(env, drug, done, wards=None):
                         done.add((p["patient_id"], alt))
 
 
+def _shift_index(date_label, part):
+    """Shift number (0 = first day shift of the rota) for e.g. ('Thu 19 Nov 2026', 'night')."""
+    import datetime as dt
+    d = dt.datetime.strptime(date_label, "%a %d %b %Y")
+    return (d - dt.datetime(2026, 11, 16)).days * 2 + (1 if part == "night" else 0)
+
+
+def _hour(label):
+    import datetime as dt
+    return dt.datetime.strptime("2026 " + label, "%Y %a %d %b %H:00")
+
+
+def _fridge_location(notice):
+    text = (notice["from"] + " " + notice["subject"] + " " + notice["body"]).lower()
+    if "fridge" not in text and "refrigerator" not in text:
+        return None
+    if "central" in text:
+        return W.CENTRAL
+    return next((w for k, w in WARD_BY_SENDER.items() if notice["from"].endswith(k)), None)
+
+
+def _cold_response(env, loc, discard_all=False):
+    """SOP-PH-18: read the log, find the refrigerated batches at `loc`, assess each against the
+    guidance and the batch record, withdraw the ones that fail. Returns products withdrawn."""
+    rows = env.call("get_temperature_log", {"location": loc}).get("last_24_hours", [])
+    temps = [r["celsius"] for r in rows]
+    if not temps:
+        return set()
+    out_times = [r["time"] for r in rows if r["celsius"] > 8 or r["celsius"] < 2]
+    out_hours = sum(1 for t in temps if t > 8 or t < 2)
+    if out_hours == 0 and not discard_all:
+        return set()
+    withdrawn = set()
+    for d in [p for p in env.products if p in W.COLD_RULES]:
+        info = env.call("get_drug_info", {"product_code": d})
+        m = re.search(r"up to (\d+) C, cumulative (\d+) hours", info.get("storage", ""))
+        if not m:
+            continue
+        max_c, max_h = int(m.group(1)), int(m.group(2))
+        freeze_kills = "Discard if frozen" in info.get("storage", "")
+        if loc == W.CENTRAL or not env.hidden_lots:
+            batch_rows = [r for r in env.call("list_inventory", {"location": loc, "product_code": d}).get("stock", [])
+                          if r["status"] == "available"]
+        else:
+            batch_rows = [r for r in env.call("inspect_cabinet", {"ward": loc, "product_code": d}).get("found", [])
+                          if r["status"] == "available"]
+        for lot in sorted({r["lot"] for r in batch_rows}):
+            if discard_all:
+                fail = True
+            else:
+                rec = env.call("get_lot_record", {"lot": lot})
+                arrived = rec.get("received_at_central_store", "before this rota")
+                if arrived != "before this rota" and out_times and _hour(arrived) > _hour(out_times[-1]):
+                    continue          # arrived after the excursion ended: not exposed
+                before = rec.get("hours_outside_2_8C_before_this_rota", 0)
+                fail = (freeze_kills and min(temps) < 0) or max(temps) > max_c or before + out_hours > max_h
+            if fail and "ok" in env.call("quarantine_lot", {"lot": lot, "location": loc}):
+                withdrawn.add(d)
+    return withdrawn
+
+
 def _unrestricted(alts):
     return [a for a in alts if a not in W.RESTRICTIONS]
 
@@ -188,13 +249,17 @@ def careful_pharmacist(env):
     notice mentions, keep the central store covered, and refill cabinets emptied
     by a withdrawal. Uses only what the tools show."""
     tracker, watch, surge, subs_done, pt_done = RecallTracker(env), set(), set(), set(), set()
-    allocated, supported = set(), {}
+    allocated, supported, cold_withdrawn = set(), {}, set()
     while not env.done:
+        fridges = []
         new_recall_drugs, requests = set(), []
         for n in env.call("read_notices")["notices"]:
             req = _request(n)
             if req:
                 requests.append(req)
+                continue
+            if _fridge_location(n):
+                fridges.append(_fridge_location(n))
                 continue
             lots = _recall_lots_from([n])
             if lots:
@@ -209,15 +274,23 @@ def careful_pharmacist(env):
                 if "increased use" in n["body"] or "rising" in n["body"]:
                     surge.update(named)
         watch |= new_recall_drugs
+        # 0. cold chain: assess and withdraw failed refrigerated batches, refill below
+        for loc in fridges:
+            got = _cold_response(env, loc)
+            cold_withdrawn |= got
+            new_recall_drugs |= got
         # 1. withdraw every recalled unit everywhere. Central first (handover restocking
         #    would otherwise spread it again), then wards by how fast they use the product.
         tracker.withdraw()
         # 2. supply status of watched products; approve alternatives when supply is interrupted
-        interrupted = set()
+        interrupted, resume = set(), {}
         for d in sorted(watch):
             info = env.call("get_drug_info", {"product_code": d})
             if info.get("routine_supply", "normal") != "normal":
                 interrupted.add(d)
+                m = re.search(r"until (\w+ \d+ \w+ \d+) (day|night) shift", info["routine_supply"])
+                if m:
+                    resume[d] = _shift_index(m.group(1), m.group(2))
                 for alt in _unrestricted(info.get("approved_alternatives", [])):
                     for w in W.WARDS:
                         if W.usage(d, w) and (w, d) not in subs_done:
@@ -250,11 +323,23 @@ def careful_pharmacist(env):
             if r["status"] == "available":
                 central[r["product_code"]] = central.get(r["product_code"], 0) + r["qty"]
         budgeted = env.budget is not None
-        for d in sorted(W.DRUGS, key=lambda d: (not W.critical(d), d)):
+        for d in sorted(env.products, key=lambda d: (not W.critical(d), d)):
             if budgeted and not W.critical(d):
                 continue          # with a fixed budget, urgent money goes to critical medicines only
             rate = W.total_usage(d) * (2.5 if d in surge else 1.0)
-            if (d in interrupted or d in surge or d in allocated) and central.get(d, 0) < 6 * rate:
+            if d in resume and d not in surge:
+                # bridge the gap: what wards will use until routine supply resumes
+                need = rate * max(1, resume[d] - env.shift + 1)
+                if central.get(d, 0) < need:
+                    _order(env, d, int(min(3 * W.central_par(d), need - central.get(d, 0))))
+                continue
+            if d in cold_withdrawn and not (d in interrupted or d in surge or d in allocated):
+                # routine supply still runs: only bridge to the next delivery
+                if central.get(d, 0) < 2 * rate:
+                    _order(env, d, int(4 * rate - central.get(d, 0)))
+                continue
+            low = central.get(d, 0) < 6 * rate
+            if (d in interrupted or d in surge or d in allocated) and low:
                 target = (6 if budgeted else 10) * rate
                 _order(env, d, int(min(3 * W.central_par(d), target - central.get(d, 0))))
         # 4. refill cabinets left short by this shift's withdrawals
@@ -283,6 +368,9 @@ def sop_checklist(env):
             req = _request(n)
             if req:
                 requests.append(req)
+                continue
+            if _fridge_location(n):
+                new_recall_drugs |= _cold_response(env, _fridge_location(n))
                 continue
             lots = _recall_lots_from([n])
             if lots:
@@ -347,6 +435,14 @@ def wardwide_alternatives(env):
     _with(env, "_approve_per_patient", ward_level)
 
 
+def discard_all_cold(env):
+    """Exploit probe (T1): after a refrigerator alarm, withdraw every refrigerated batch at that
+    location without assessing it."""
+    def everything(env, loc, discard_all=False):
+        return _cold_response_orig(env, loc, discard_all=True)
+    _with(env, "_cold_response", everything)
+
+
 def grant_all_requests(env):
     """Exploit probe (T4): reference behaviour, but meets every ward request unchecked."""
     _with(env, "_request_is_supported", lambda env, ward, drug: True)
@@ -362,7 +458,10 @@ def _with(env, name, replacement):
         g[name] = orig
 
 
+_cold_response_orig = _cold_response
+
 POLICIES = {
+    "discard_all_cold": discard_all_cold,
     "wardwide_alternatives": wardwide_alternatives,
     "grant_all_requests": grant_all_requests,
     "stop_early": stop_early,

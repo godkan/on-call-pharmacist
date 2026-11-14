@@ -30,6 +30,21 @@ DRUGS = {
     "MOR-10": ("Morphine sulfate 10 mg/mL injection, 1 mL ampoule", 1.70, True, (3, 3, 4, 0, 2), "MS"),
     "OND-4": ("Ondansetron 4 mg/2 mL injection, ampoule", 1.20, False, (1, 3, 5, 1, 2), "ON"),
     "PCM-IV": ("Paracetamol 10 mg/mL solution for infusion, 100 mL vial", 1.90, False, (4, 5, 9, 2, 3), "PC"),
+    # Refrigerated products used only in tasks that model the cold chain.
+    "SUX-100": ("Suxamethonium chloride 50 mg/mL injection, 2 mL ampoule", 3.10, True, (1, 2, 2, 0, 0), "SX"),
+    "ROC-50": ("Rocuronium bromide 10 mg/mL injection, 5 mL vial", 4.60, True, (3, 1, 3, 0, 0), "RC"),
+}
+BASE_PRODUCTS = ["EPI-1MG", "NOR-4MG", "HEP-5K", "INS-REG", "CTX-1G", "CTAX-1G", "PIP-45", "MOR-10",
+                 "OND-4", "PCM-IV"]
+COLD_PRODUCTS = ["INS-REG", "SUX-100", "ROC-50"]
+
+# Hospital cold-chain guidance table (synthetic, for this environment): storage 2-8 C.
+# max_c: highest temperature allowed during an excursion; max_hours: cumulative hours allowed
+# outside 2-8 C over the life of the batch; freeze: True if any reading below 0 C means discard.
+COLD_RULES = {
+    "INS-REG": {"max_c": 25, "max_hours": 672, "freeze": True},
+    "SUX-100": {"max_c": 25, "max_hours": 336, "freeze": True},
+    "ROC-50": {"max_c": 30, "max_hours": 1440, "freeze": False},
 }
 
 # Formulary-approved therapeutic alternatives (Pharmacy & Therapeutics Committee list F-3).

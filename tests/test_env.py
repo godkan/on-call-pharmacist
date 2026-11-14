@@ -166,6 +166,42 @@ class TestFiveTasks(unittest.TestCase):
         self.assertNotIn(("MED", "CTX-1G", "PIP-45"), env.substitutions)
 
 
+class TestColdChain(unittest.TestCase):
+    def _after_event(self, i, seed=0):
+        t = TASKS["T1"](seed)
+        env = Env(t)
+        ev = t["cold_events"][i]
+        while env.shift <= ev["shift"]:
+            env.call("end_shift")
+        return t, env, ev
+
+    def test_warm_excursion_fails_only_the_near_limit_batch(self):
+        t, env, ev = self._after_event(0)
+        damaged = [e for e in env.stock if e.get("damaged") and e["qty"]]
+        self.assertEqual({e["drug"] for e in damaged}, {"SUX-100"})
+        self.assertTrue(all(e["loc"] == ev["location"] for e in damaged))
+
+    def test_freeze_spares_rocuronium_and_later_deliveries(self):
+        t, env, ev = self._after_event(1)
+        central = [e for e in env.stock if e["loc"] == "CENTRAL" and e["drug"] in ("INS-REG", "SUX-100", "ROC-50") and e["qty"]]
+        self.assertTrue(any(e.get("damaged") for e in central if e["drug"] == "INS-REG"))
+        self.assertFalse(any(e.get("damaged") for e in central if e["drug"] == "ROC-50"))
+        for e in central:
+            if e.get("damaged"):
+                self.assertFalse(e["lot"] in env.received and env.received[e["lot"]] > ev["shift"])
+
+    def test_withdrawing_a_failed_batch_is_not_wrong(self):
+        t, env, ev = self._after_event(1)
+        lot = next(e["lot"] for e in env.stock if e["loc"] == "CENTRAL" and e.get("damaged") and e["qty"])
+        env.call("quarantine_lot", {"lot": lot, "location": "CENTRAL"})
+        self.assertEqual(env.metrics["wrong_quarantine_units"], 0)
+
+    def test_log_shows_the_excursion(self):
+        t, env, ev = self._after_event(1)
+        temps = [r["celsius"] for r in env.call("get_temperature_log", {"location": "CENTRAL"})["last_24_hours"]]
+        self.assertLess(min(temps), 0)
+
+
 class TestClaudeHarness(unittest.TestCase):
     def test_claude_loop_with_scripted_client(self):
         """Feed the reference policy's calls through the Claude loop via a fake client."""
