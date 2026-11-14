@@ -49,7 +49,9 @@ def check_gates(task, rows):
             fails.append("seed %d: judgment gap" % seed)
         if min(sc["careful_pharmacist"] - thr, thr - sc["sop_checklist"]) < FLAP_MARGIN:
             fails.append("seed %d: threshold margin" % seed)
-        if not all(sc["blanket_quarantine"] < sc[n] for n in HONEST):
+        # As in StoreBench, the exploit must score below every honest anchor that acts;
+        # do_nothing is the zero point, not a competitor.
+        if not all(sc["blanket_quarantine"] < sc[n] for n in HONEST if n != "do_nothing"):
             fails.append("seed %d: exploit not suppressed" % seed)
     return fails, thresholds
 

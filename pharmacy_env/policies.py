@@ -78,11 +78,16 @@ def careful_pharmacist(env):
                 if "increased use" in n["body"] or "rising" in n["body"]:
                     surge.update(named)
         watch |= new_recall_drugs
-        # 1. withdraw every recalled unit everywhere
+        # 1. withdraw every recalled unit everywhere. Central first (handover restocking
+        #    would otherwise spread it again), then wards by how fast they use the product.
+        hits = []
         for lot in known_lots:
             for loc in env.call("find_lot", {"lot": lot})["locations"]:
                 if loc["status"] == "available":
-                    env.call("quarantine_lot", {"lot": lot, "location": loc["location"]})
+                    rank = -1e9 if loc["location"] == W.CENTRAL else -W.usage(loc["product_code"], loc["location"])
+                    hits.append((rank, loc["location"], lot))
+        for _, where, lot in sorted(hits):
+            env.call("quarantine_lot", {"lot": lot, "location": where})
         # 2. supply status of watched products; approve alternatives when supply is interrupted
         interrupted = set()
         for d in sorted(watch):

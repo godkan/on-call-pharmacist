@@ -3,6 +3,8 @@ import random
 
 from . import world as W
 
+TAG = "26K"   # lot tag of routine wholesaler deliveries during the rota
+
 
 def _lot_code(rng, prefix):
     return "%s%d%s%03d" % (prefix, rng.choice([24, 25]), rng.choice("ABCDEFGH"), rng.randint(100, 999))
@@ -160,7 +162,10 @@ def fortnight_task(seed):
         _mail("N-2008", 14, "Pharmacy Management",
               "Reminder: monthly stock-take next month",
               "The monthly stock-take is scheduled for the first week of December. No action needed now."),
-        _recall_notice("N-2009", r2, "EPI-1MG", [epi_b],
+        # The second recall names the two routine deliveries (shifts 8 and 12) that are
+        # spread over the central store and every cabinet when the notice arrives.
+        _recall_notice("N-2009", r2, "EPI-1MG",
+                       ["%s%s%02d" % (W.DRUGS["EPI-1MG"][4], TAG, s) for s in (8, 12)],
                        "ampoules may contain sub-potent product (assay failure at stability timepoint)",
                        "II", rng),
         _mail("N-2010", 24, "Hospital IT Service Desk",
@@ -174,7 +179,7 @@ def fortnight_task(seed):
                            "EPI-1MG": (r2, r2 + 4)},
                 surges=[("PIP-45", ("ICU", "MED"), flu_start, surge_end, 2.5),
                         ("PCM-IV", ("ICU", "MED"), flu_start, surge_end, 2.0)],
-                standing_orders=True, delivery_lot_tag="26K")
+                standing_orders=True, delivery_lot_tag=TAG)
 
 
 TASKS = {"T1": recall_task, "T5": fortnight_task}
