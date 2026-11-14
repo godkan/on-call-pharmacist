@@ -450,6 +450,86 @@ def sop_checklist(env):
         env.call("end_shift")
 
 
+def _react_to_shortages(env, central, short_patient_drugs, min_minutes=0):
+    """Check each ward's usage report and fix shortages reported in the last shift: transfer
+    from the central store, otherwise the cheapest supply that arrives next shift. Stops when
+    desk time falls below `min_minutes`."""
+    bought = set()
+    for w in sorted(W.WARDS, key=lambda w: (-W.WARD_WEIGHT[w], w)):
+        if env.minutes_left < max(min_minutes, 5):
+            break
+        rows = env.call("get_usage_report", {"location": w}).get("last_shifts", [])
+        if not rows:
+            continue
+        last = rows[-1]["shift"]
+        for r in rows:
+            if r["shift"] != last or r["could_not_issue"] <= 0:
+                continue
+            d = r["product_code"]
+            if d in env.patient_drugs:
+                short_patient_drugs.add(d)
+            need = int(2 * W.usage(d, w) + r["could_not_issue"])
+            if central.get(d, 0) > 0:
+                moved = env.call("transfer_stock", {"product_code": d, "from_location": W.CENTRAL,
+                                                    "to_location": w, "qty": min(need, central[d])})
+                central[d] -= moved.get("moved_units", 0)
+            elif d not in bought:
+                _buy(env, d, int(4 * W.total_usage(d)), 0)
+                bought.add(d)
+
+
+def reactive_pharmacist(env):
+    """Reactive anchor: follows the SOPs like sop_checklist and, every shift, checks each
+    ward's usage report and fixes the shortages that have already happened (transfer from
+    the central store, otherwise the cheapest supply that arrives next shift; per-patient
+    alternatives once a patient product runs short). It never acts on early warnings."""
+    tracker, subs_done, pt_done = RecallTracker(env), set(), set()
+    short_patient_drugs = set()
+    while not env.done:
+        new_recall_drugs, supply_drugs, requests = set(), set(), []
+        for n in env.call("read_notices")["notices"]:
+            req = _request(n)
+            if req:
+                requests.append(req)
+                continue
+            if _fridge_location(n):
+                new_recall_drugs |= _cold_response(env, _fridge_location(n))
+                continue
+            lots = _recall_lots_from([n])
+            if lots:
+                before = set(tracker.lots)
+                tracker.register(n)
+                new_recall_drugs |= {tracker.lots[l] for l in set(tracker.lots) - before}
+            if not lots and ("suspended" in n["body"] or "allocation" in n["body"].lower()):
+                supply_drugs.update(_drugs_named(n["subject"]))
+        tracker.withdraw()
+        for ward, d, qty in requests:
+            if _request_is_supported(env, ward, d):
+                env.call("transfer_stock", {"product_code": d, "from_location": W.CENTRAL,
+                                            "to_location": ward, "qty": qty})
+        for d in sorted(supply_drugs):
+            for alt in _unrestricted(W.ALTERNATIVES.get(d, [])):
+                for w in W.WARDS:
+                    if W.usage(d, w) and (w, d) not in subs_done:
+                        env.call("approve_substitution", {"ward": w, "product_code": d, "alternative_code": alt})
+                        subs_done.add((w, d))
+        # react to shortages that wards reported in the last shift
+        central = {}
+        for r in env.call("list_inventory", {"location": W.CENTRAL}).get("stock", []):
+            if r["status"] == "available":
+                central[r["product_code"]] = central.get(r["product_code"], 0) + r["qty"]
+        _react_to_shortages(env, central, short_patient_drugs)
+        for d in sorted(short_patient_drugs):
+            _approve_per_patient(env, d, pt_done)
+        for d in sorted(new_recall_drugs):
+            for w in W.WARDS:
+                if W.usage(d, w) and central.get(d, 0) > 0:
+                    r = env.call("transfer_stock", {"product_code": d, "from_location": W.CENTRAL,
+                                                    "to_location": w, "qty": min(W.usage(d, w) * 2, central[d])})
+                    central[d] -= r.get("moved_units", 0)
+        env.call("end_shift")
+
+
 def stop_early(env):
     """Stop-early baseline: works the first quarter of the rota like the reference,
     then stops calling tools. Remaining shifts run unattended."""
@@ -513,6 +593,7 @@ POLICIES = {
     "grant_all_requests": grant_all_requests,
     "stop_early": stop_early,
     "sop_checklist": sop_checklist,
+    "reactive_pharmacist": reactive_pharmacist,
     "do_nothing": do_nothing,
     "central_only": central_only,
     "blanket_quarantine": blanket_quarantine,

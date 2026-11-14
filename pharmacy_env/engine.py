@@ -170,6 +170,8 @@ class Env:
         self.patient_drugs = set(task.get("patient_drugs", []))
         self.patient_subs = set()    # (patient_id, drug, alt)
         self.urgent_caps = task.get("urgent_caps", {})      # product -> max units per shift
+        # product -> (first shift, urgent cap per shift, standing-order share) for allocation announced mid-rota
+        self.allocation_from = task.get("allocation_from", {})
         self.budget = task.get("urgent_budget")             # EUR for urgent orders, or None
         self.ordered_this_shift = {}
         self.cold_events = task.get("cold_events", [])     # dict(location, shift, start, hours, temp)
@@ -336,6 +338,8 @@ class Env:
                 if self.task.get("standing_orders"):
                     # Fixed standing order sized for normal use (scaled down under allocation); capped at par.
                     share = self.task.get("standing_share", {}).get(drug, 1.0)
+                    if drug in self.allocation_from and s >= self.allocation_from[drug][0]:
+                        share = self.allocation_from[drug][2]
                     gap = min(gap, int(W.DELIVERY_EVERY_SHIFTS * W.total_usage(drug) * share))
                 if gap > 0:
                     lot = "%s%s%02d" % (W.prefix(drug), self.task["delivery_lot_tag"], s)
@@ -431,7 +435,7 @@ class Env:
     def t_read_policy(self, topic):
         if topic not in POLICIES and not (topic == "cold_chain" and self.cold_events):
             return {"error": "Unknown topic. Available: %s" % ", ".join(POLICIES)}
-        if topic == "urgent_order" and (self.urgent_caps or self.budget is not None):
+        if topic == "urgent_order" and (self.urgent_caps or self.allocation_from or self.budget is not None):
             return {"policy": POLICIES_V3_URGENT}
         if topic == "cold_chain" and self.cold_events:
             return {"policy": COLD_CHAIN_SOP}
@@ -453,7 +457,9 @@ class Env:
                                              % W.RESTRICTIONS[a] for a in W.ALTERNATIVES.get(d, [])
                                              if a in W.RESTRICTIONS},
                 "routine_supply": status, "central_par": W.central_par(d),
-                **({"urgent_order_limit_per_shift": self.urgent_caps[d]} if d in self.urgent_caps else {}),
+                **({"urgent_order_limit_per_shift": self._cap(d)} if self._cap(d) is not None else {}),
+                **({"national_allocation": "from %s" % self.shift_label(self.allocation_from[d][0])}
+                   if d in self.allocation_from and self.shift >= self.allocation_from[d][0] - 4 else {}),
                 **({"storage": "Refrigerate 2-8 C. Excursions allowed up to %d C, cumulative %d hours outside 2-8 C "
                                "over the life of the batch. %s" % (W.COLD_RULES[d]["max_c"], W.COLD_RULES[d]["max_hours"],
                                                                    "Discard if frozen." if W.COLD_RULES[d]["freeze"]
@@ -616,7 +622,14 @@ class Env:
         return self.metrics["urgent_spend"] + self.metrics.get("wholesaler_spend", 0.0)
 
     def _on_allocation(self, d):
-        return d in self.urgent_caps
+        a = self.allocation_from.get(d)
+        return d in self.urgent_caps or bool(a and self.shift >= a[0])
+
+    def _cap(self, d):
+        a = self.allocation_from.get(d)
+        if a and self.shift >= a[0]:
+            return a[1]
+        return self.urgent_caps.get(d)
 
     def _supply_paused(self, d):
         sus = self.suspended.get(d)
@@ -697,7 +710,7 @@ class Env:
         qty = int(qty)
         if qty <= 0 or qty > 3 * W.central_par(product_code):
             return {"error": "Quantity must be between 1 and %d." % (3 * W.central_par(product_code))}
-        cap = self.urgent_caps.get(product_code)
+        cap = self._cap(product_code)
         if cap is not None and self.ordered_this_shift.get(product_code, 0) + qty > cap:
             return {"error": "RapidRx allocation: at most %d units of %s per shift (%d already ordered "
                              "this shift)." % (cap, product_code, self.ordered_this_shift.get(product_code, 0))}

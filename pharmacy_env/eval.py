@@ -26,7 +26,7 @@ SEEDS = [0, 1, 2, 3, 4]
 TASK_IDS = ["T1", "T2", "T3", "T4", "T5"]
 CONTROL = ["C1"]
 TRAJ_DIR = os.path.join("results", "trajectories")
-HONEST = ["careful_pharmacist", "sop_checklist", "central_only", "do_nothing"]
+HONEST = ["careful_pharmacist", "reactive_pharmacist", "sop_checklist", "central_only", "do_nothing"]
 # Shortcut probes per task: each must lose clearly to the reference.
 PROBES = {"T1": ["blanket_quarantine", "discard_all_cold"], "T2": ["wardwide_alternatives"], "T3": [],
           "T4": ["grant_all_requests"], "T5": ["blanket_quarantine"]}
@@ -57,7 +57,8 @@ def check_gates(task, rows):
         if task not in PROCEDURE_TASKS:
             if ref - sop < JUDGMENT_GAP:
                 fails.append("seed %d: judgment gap" % seed)
-            if min(ref - thr, thr - sop) < FLAP_MARGIN:
+            second = sorted((sc[n] for n in HONEST if n != "careful_pharmacist"), reverse=True)[0]
+            if min(ref - thr, thr - second) < FLAP_MARGIN:
                 fails.append("seed %d: threshold margin" % seed)
         for probe in PROBES.get(task, []):
             if sc[probe] > ref - EXPLOIT_MARGIN:

@@ -144,6 +144,11 @@ def _patients(rng, n_shifts, drug="CTX-1G", penicillin_rate=0.25):
     return out
 
 
+T5_ALLOC_DELAY = 4      # shifts from the influenza memo until piperacillin/tazobactam goes on allocation
+T5_ALLOC_CAP = 6        # RapidRx vials per shift once on allocation
+T5_ALLOC_SHARE = 0.5    # share of normal standing orders delivered once on allocation
+
+
 def fortnight_task(seed):
     """T5: a two-week rota (28 shifts) in which several things happen at once and
     some only show up in the numbers: two recalls a week apart, a ceftriaxone supply
@@ -187,6 +192,13 @@ def fortnight_task(seed):
               "Influenza A admissions to the medical wards and ICU have risen sharply this week and are "
               "expected to keep rising. Wards report increased use of piperacillin/tazobactam and IV "
               "paracetamol. Please plan supply accordingly."),
+        _mail("N-2006", flu_memo + 1, "Baltic Pharma Distribution - Customer Service",
+              "Advance notice: Piperacillin/tazobactam 4 g/0.5 g to go on national allocation",
+              "Because of high national demand this influenza season, piperacillin/tazobactam 4 g/0.5 g vials "
+              "go on national allocation from %s. From that date standing orders are cut to %d%% of normal "
+              "quantities, RapidRx Express can supply at most %d vials per hospital per shift, and secondary "
+              "wholesalers expect to have no stock. Orders placed before that date are supplied in full."
+              % (day(flu_memo + T5_ALLOC_DELAY), int(T5_ALLOC_SHARE * 100), T5_ALLOC_CAP)),
         _mail("N-2007", 8, "Hospital Facilities",
               "Lift B out of service Thursday 08:00-12:00",
               "Lift B will be out of service for inspection. Use lift A or C for trolleys."),
@@ -211,6 +223,7 @@ def fortnight_task(seed):
                 surges=[("PIP-45", ("ICU", "MED"), flu_start, surge_end, 2.5),
                         ("PCM-IV", ("ICU", "MED"), flu_start, surge_end, 2.0)],
                 standing_orders=True, delivery_lot_tag=TAG,
+                allocation_from={"PIP-45": (flu_memo + T5_ALLOC_DELAY, T5_ALLOC_CAP, T5_ALLOC_SHARE)},
                 cabinet_lots_hidden=True,
                 issue_history=_issue_history(random.Random("T5-issues-%s" % seed), stock),
                 patients=_patients(random.Random("T5-patients-%s" % seed), 28), patient_drugs=["CTX-1G"])
