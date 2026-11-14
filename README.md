@@ -24,7 +24,9 @@ task (C1).
 **25/25 runs score below the scripted reference pharmacist; 22/25 score below the pass
 threshold.** A second, stronger model, Kimi K3.1 Pro (25 runs: 3 seeds per task plus 2 repeats
 on seed 0), scores below the threshold in all 10 runs of T1 and T2 and 4 of 5 of T5, but passes T4
-in every run and T3 in three of five, beating the reference once on each. Every run replays to the exact recorded score.
+in every run and T3 in three of five, beating the reference once on each. With reasoning switched
+on (effort high, seed 0), DeepSeek is still below the reference on all five tasks and below the
+threshold on four; it passes T2. Every run replays to the exact recorded score.
 
 ```bash
 python3 -m pharmacy_env.eval        # one command, no API key, standard library only
@@ -181,6 +183,20 @@ task:
 
 The 25 Kimi runs used 8.9 million input tokens.
 
+**Reasoning switched on.** The DeepSeek runs above use reasoning effort none. To check that the gap
+is not an artefact of that setting, we reran seed 0 of every task with reasoning effort high
+(`LLM_REASONING_EFFORT=high`; 6.2 million input and 1.0 million output tokens):
+
+| | T1 | T2 | T3 | T4 | T5 |
+|---|---|---|---|---|---|
+| DeepSeek, reasoning high | 0.73 | **0.90** | 0.58 | 0.43 | 0.87 |
+| pass threshold | 1.00 | 0.82 | 0.80 | 0.71 | 0.89 |
+| DeepSeek, reasoning none (seed 0, 3 runs) | 0.51, 0.76, 0.58 | 0.62, 0.51, 0.33 | 0.63, 0.94, 0.64 | 0.13, 0.15, 0.34 | 0.82, 0.49, 0.65 |
+
+Reasoning helps where the work is per-patient bookkeeping: in T2 it approved alternatives patient
+by patient (28 approvals, no contraindicated dose) and passes. It does not fix the safety failures:
+in T1, 26 recalled and 10 damaged units still reached patients, and in T5, 23 recalled units did.
+
 The DeepSeek runs used 23.5 million input tokens in total (0.4-1.8 million per run). On T2 and T5 the
 model also scores below the reactive anchor (a script that only repairs shortages after they
 happen) in 4 of 5 runs, and on T1 and T4 in every run.
@@ -293,7 +309,7 @@ token usage, endpoint and settings.
 | `pharmacy_env/analyze.py` | Tags failure modes in a trajectory |
 | `pharmacy_env/run_agent.py` | Agent harness for OpenAI-compatible APIs |
 | `pharmacy_env/run_claude.py` | Agent harness for Claude (Anthropic SDK) |
-| `results/trajectories/` | The 50 model runs reported above (25 DeepSeek, 25 Kimi) |
+| `results/trajectories/` | The 55 model runs reported above (25 DeepSeek, 5 DeepSeek with reasoning high, 25 Kimi) |
 | `results/eval_output.txt` | Output of `python3 -m pharmacy_env.eval` |
 | `tests/test_env.py` | Determinism, gates, harness and replay, batch tracing, allergies, cold chain, supply channels |
 
@@ -323,6 +339,8 @@ threshold on a two-week task), v3 (batch tracing and allergies), v4 (five tasks)
 ## Limitations
 
 - **Two models.** 25 runs of DeepSeek V4.1 Flash and 25 of Kimi K3.1 Pro (3 seeds plus 2 repeats on seed 0).
+  The main DeepSeek runs use reasoning effort none; the reasoning-high check is one run per task on
+  seed 0, and with it DeepSeek passes T2.
   Earlier versions of the environment were run with Gemini 3.5 Flash with the same pattern,
   but those runs do not replay on the current world.
 - **T3 and T4 are model-dependent.** DeepSeek is below the reference in every T3 and T4 run, but

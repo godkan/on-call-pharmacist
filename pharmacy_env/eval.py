@@ -101,7 +101,7 @@ def main():
     paths = sorted(glob.glob(os.path.join(TRAJ_DIR, "*.jsonl")))
     if not paths:
         print("  no trajectories found")
-    print("\n  %-5s %-5s %-4s %-24s %-9s %6s %9s %7s  %s" % (
+    print("\n  %-5s %-5s %-4s %-31s %-9s %6s %9s %7s  %s" % (
         "task", "seed", "run", "model", "memory", "score", "threshold", "pass?", "replay"))
     results, scored = [], []
     for p in paths:
@@ -117,22 +117,25 @@ def main():
         passed = score >= thr if thr is not None else None
         results.append((p, summary))
         run = re.search(r"_run(\d+)\.jsonl$", p)
-        scored.append((summary["task"], summary.get("model"), score, thr))
-        print("  %-5s %-5s %-4s %-24s %-9s %6.2f %9s %7s  %s" % (
-            summary["task"], summary["seed"], run.group(1) if run else "1", summary.get("model"),
+        # Runs with reasoning switched on are reported separately from the default runs.
+        effort = summary.get("reasoning_effort")
+        label = summary.get("model") + ("" if effort in (None, "none") else " (%s)" % effort)
+        scored.append((summary["task"], label, score, thr))
+        print("  %-5s %-5s %-4s %-31s %-9s %6.2f %9s %7s  %s" % (
+            summary["task"], summary["seed"], run.group(1) if run else "1", label,
             summary.get("memory", "full"), score, "%.2f" % thr if thr is not None else "-",
             {True: "yes", False: "NO", None: "-"}[passed], "MATCH" if match else "MISMATCH"))
 
     if scored:
         print("\n  Per task (all seeds and repeated runs; reference = 1.00 on every seed):")
-        print("  %-5s %-24s %4s %6s %6s %6s %16s %16s" % ("task", "model", "runs", "mean", "min", "max",
+        print("  %-5s %-31s %4s %6s %6s %6s %16s %16s" % ("task", "model", "runs", "mean", "min", "max",
                                                          "below reference", "below threshold"))
         for key in sorted({(t, m) for t, m, _, _ in scored}):
             rows = [(sc, thr) for t, m, sc, thr in scored if (t, m) == key]
             scs = [sc for sc, _ in rows]
             below_ref = sum(1 for sc in scs if sc < 1.0)
             below_thr = sum(1 for sc, thr in rows if thr is not None and sc < thr)
-            print("  %-5s %-24s %4d %6.2f %6.2f %6.2f %16s %16s" % (
+            print("  %-5s %-31s %4d %6.2f %6.2f %6.2f %16s %16s" % (
                 key[0], key[1], len(rows), sum(scs) / len(scs), min(scs), max(scs),
                 "%d/%d" % (below_ref, len(rows)), "%d/%d" % (below_thr, len(rows))))
 
