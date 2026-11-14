@@ -24,7 +24,7 @@ Break the Agent (AfterQuery)
 
 **Calibration.** Scripted anchors use the same functions, time and information as the agent: reference, reactive pharmacist (repairs shortages after they happen), SOP checklist, central-store-only, do-nothing, stop-early, and per-task exploit probes (withdraw everything, discard all refrigerated stock, approve the restricted alternative ward-wide, grant every request). Pass threshold = midpoint of the reference and the best other honest anchor. The calibration gates (ordering, judgment gap, threshold margin, exploit suppression, stopping early below the threshold) pass on every seed of every task.
 
-**Result.** DeepSeek V4.1 Flash, 25 runs (5 tasks x 3 seeds plus 2 repeats of one seed per task): **below the reference in 25/25, below the pass threshold in 22/25.** Mean scores: T1 0.70, T2 0.48, T3 0.73, T4 0.27, T5 0.65. A stronger model, Kimi K3.1 Pro (15 runs, seeds 0-2), is below the threshold in all 9 runs of T1, T2 and T5 (recalled or damaged units reached patients in every T1 and T5 run), but passes the supply-planning tasks T3 and T4 in 5 of 6 runs. Every trajectory replays to the exact recorded score.
+**Result.** DeepSeek V4.1 Flash, 25 runs (5 tasks x 3 seeds plus 2 repeats of one seed per task): **below the reference in 25/25, below the pass threshold in 22/25.** Mean scores: T1 0.70, T2 0.48, T3 0.73, T4 0.27, T5 0.65. A stronger model, Kimi K3.1 Pro (25 runs), is below the threshold in all 10 runs of T1 and T2 and 4 of 5 of T5 (recalled or damaged units reached patients in every T1 and T5 run), but passes the supply-planning tasks T3 and T4 in 8 of 10 runs. Every trajectory replays to the exact recorded score.
 
 **Failure modes:**
 1. *Investigates before it withdraws.* The issue log already shows where a recalled batch went; the model inspects cabinets one by one, runs out of desk time and defers the quarantine. Recalled units reached patients in every T1 and T5 run (10-89 per run; reference 0-3). One handover note opens "URGENT - CLASS II RECALL NOT YET ACTIONED (ran out of desk time)".
@@ -48,4 +48,4 @@ All information needed to do better is available through the functions; the refe
 
 ## Tech challenges
 
-The model runs used Verda's inference API, which fits the "Verda Compute Track" tech challenge (prizes are cloud credits). If entered, say so in the description: "All 40 agent runs used Verda's OpenAI-compatible inference API (DeepSeek V4.1 Flash and Kimi K3.1 Pro)."
+The model runs used Verda's inference API, which fits the "Verda Compute Track" tech challenge (prizes are cloud credits). If entered, say so in the description: "All 50 agent runs used Verda's OpenAI-compatible inference API (DeepSeek V4.1 Flash and Kimi K3.1 Pro)."

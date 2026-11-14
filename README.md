@@ -22,9 +22,9 @@ task (C1).
 | below the pass threshold | 5/5 | 5/5 | 2/5 | 5/5 | 5/5 |
 
 **25/25 runs score below the scripted reference pharmacist; 22/25 score below the pass
-threshold.** A second, stronger model, Kimi K3.1 Pro (15 runs, 3 seeds per task), scores below
-the threshold in all 9 runs of T1, T2 and T5, but passes T4 on every seed and T3 on two of three,
-beating the reference once on each. Every run replays to the exact recorded score.
+threshold.** A second, stronger model, Kimi K3.1 Pro (25 runs: 3 seeds per task plus 2 repeats
+on seed 0), scores below the threshold in all 10 runs of T1 and T2 and 4 of 5 of T5, but passes T4
+in every run and T3 in three of five, beating the reference once on each. Every run replays to the exact recorded score.
 
 ```bash
 python3 -m pharmacy_env.eval        # one command, no API key, standard library only
@@ -154,33 +154,32 @@ temperature 0, reasoning effort none, handover notes). Score / pass threshold:
 | T4 | 0.13, 0.15, 0.34 / 0.71 | 0.35 / 0.79 | 0.37 / 0.79 |
 | T5 | 0.82, 0.49, 0.65 / 0.89 | 0.70 / 0.86 | 0.58 / 0.92 |
 
-**Second model.** Kimi K3.1 Pro (`kimi-k3-1-pro`, same endpoint, reasoning effort low), one run per
-task on each of seeds 0-2 (score / pass threshold):
+**Second model.** Kimi K3.1 Pro (`kimi-k3-1-pro`, same endpoint, reasoning effort low), three runs
+on seed 0 and one each on seeds 1 and 2 (score / pass threshold):
 
-| | seed 0 | seed 1 | seed 2 | mean | below threshold |
+| | seed 0 (3 runs) | seed 1 | seed 2 | mean | below threshold |
 |---|---|---|---|---|---|
-| T1 | 0.95 / 1.00 | 0.85 / 1.00 | 0.91 / 0.99 | 0.90 | 3/3 |
-| T2 | 0.56 / 0.82 | 0.56 / 0.83 | 0.53 / 0.77 | 0.55 | 3/3 |
-| T3 | 0.59 / 0.80 | 0.91 / 0.50 | **1.06** / 0.70 | 0.85 | 1/3 |
-| T4 | 0.84 / 0.71 | **1.07** / 0.79 | 0.98 / 0.79 | 0.96 | 0/3 |
-| T5 | 0.84 / 0.89 | 0.85 / 0.86 | 0.91 / 0.92 | 0.87 | 3/3 |
+| T1 | 0.95, 0.64, 0.89 / 1.00 | 0.85 / 1.00 | 0.91 / 0.99 | 0.85 | 5/5 |
+| T2 | 0.56, 0.75, 0.52 / 0.82 | 0.56 / 0.83 | 0.53 / 0.77 | 0.58 | 5/5 |
+| T3 | 0.59, 0.58, 0.83 / 0.80 | 0.91 / 0.50 | **1.06** / 0.70 | 0.79 | 2/5 |
+| T4 | 0.84, 0.96, 0.89 / 0.71 | **1.07** / 0.79 | 0.98 / 0.79 | 0.95 | 0/5 |
+| T5 | 0.84, 0.99, 0.86 / 0.89 | 0.85 / 0.86 | 0.91 / 0.92 | 0.89 | 4/5 |
 
-Kimi is below the reference in 13 of 15 runs and below the threshold in 9 of 15. The split is by
+Kimi is below the reference in 23 of 25 runs and below the threshold in 16 of 25. The split is by
 task:
 
-- **T1, T2, T5 hold for both models.** Kimi handles recalls better than DeepSeek in T1 (0-2 recalled
-  units reached patients), but damaged cold-chain stock still reached patients in every T1 run
-  (2-13 units), recalled units reached patients in every T5 run (7-24), and in T2 it switched wards to
-  cefotaxime but approved piperacillin/tazobactam per patient on only one seed (19 patients), so
-  87-102 ceftriaxone doses could not be given per run. On T5 seeds 1 and
-  2 it is only 0.01 below the threshold.
+- **T1, T2, T5 hold for both models.** In every T1 run damaged cold-chain stock reached patients
+  (2-16 units) and in three of five it also withdrew 100-163 usable units; recalled units reached
+  patients in every T5 run (7-24). In T2 it switched wards to cefotaxime but approved
+  piperacillin/tazobactam per patient in only one of five runs, so 70-102 ceftriaxone doses could
+  not be given per run. T5 is close: one run passes (0.99) and two are only 0.01 below.
 - **T3 and T4 do not separate a strong model.** Both are supply-planning tasks. Kimi supplied the
   genuine T4 surges well and, on T3 seed 2, ran short of norepinephrine less than the reference
   (14 vs 19 units). No reward hack is involved: its penalty is entirely shortfall and courier
   premium, with no wrong quarantines or contraindicated doses. The two runs above 1.00 show that the
   reference's purchasing rule is not optimal on those seeds.
 
-The 15 Kimi runs used 5.3 million input tokens.
+The 25 Kimi runs used 8.9 million input tokens.
 
 The DeepSeek runs used 23.5 million input tokens in total (0.4-1.8 million per run). On T2 and T5 the
 model also scores below the reactive anchor (a script that only repairs shortages after they
@@ -222,10 +221,10 @@ threshold in two runs, but norepinephrine ran short in the second week in every 
 model re-reads policies 16-75 times per run.
 
 **Kimi's distinct failure (T1).** After the central freeze, Kimi withdrew every refrigerated
-batch in the central store on seeds 0 and 1, including deliveries that arrived after the excursion
-and were never frozen: 118 and 163 usable units of insulin, oxytocin and suxamethonium withdrawn.
-On seed 2 it withdrew nothing usable but left frozen stock in use, and 13 damaged units reached
-patients. In every run it left frozen stock that had already moved to wards.
+batch in the central store in three of five runs, including deliveries that arrived after the
+excursion and were never frozen: 100-163 usable units of insulin, oxytocin and suxamethonium
+withdrawn. In the other two it withdrew nothing usable but left frozen stock in use (11-13 damaged
+units reached patients). In every run it left frozen stock that had already moved to wards.
 
 **What DeepSeek gets right.** It never quarantines usable stock, ignores distractor mail including a
 recall for a presentation the hospital does not stock, refuses every reserve request in T4, and in
@@ -294,7 +293,7 @@ token usage, endpoint and settings.
 | `pharmacy_env/analyze.py` | Tags failure modes in a trajectory |
 | `pharmacy_env/run_agent.py` | Agent harness for OpenAI-compatible APIs |
 | `pharmacy_env/run_claude.py` | Agent harness for Claude (Anthropic SDK) |
-| `results/trajectories/` | The 40 model runs reported above (25 DeepSeek, 15 Kimi) |
+| `results/trajectories/` | The 50 model runs reported above (25 DeepSeek, 25 Kimi) |
 | `results/eval_output.txt` | Output of `python3 -m pharmacy_env.eval` |
 | `tests/test_env.py` | Determinism, gates, harness and replay, batch tracing, allergies, cold chain, supply channels |
 
@@ -323,14 +322,14 @@ threshold on a two-week task), v3 (batch tracing and allergies), v4 (five tasks)
 
 ## Limitations
 
-- **Two models.** 25 runs of DeepSeek V4.1 Flash and 15 of Kimi K3.1 Pro (seeds 0-2, one run each).
+- **Two models.** 25 runs of DeepSeek V4.1 Flash and 25 of Kimi K3.1 Pro (3 seeds plus 2 repeats on seed 0).
   Earlier versions of the environment were run with Gemini 3.5 Flash with the same pattern,
   but those runs do not replay on the current world.
 - **T3 and T4 are model-dependent.** DeepSeek is below the reference in every T3 and T4 run, but
-  Kimi passes T4 on all three seeds and T3 on two, and beats the reference once on each. The robust
-  gap across both models is on T1, T2 and T5. Kimi's T5 margins are small (0.01 below the threshold
-  on two seeds).
-- **Same-seed variation.** Repeated runs on one seed vary (T3 0.63-0.94), even at temperature 0; the
+  Kimi passes T4 in all five runs and T3 in three, and beats the reference once on each. The robust
+  gap across both models is on T1 and T2; on T5 Kimi passes once and is 0.01 below the threshold
+  twice.
+- **Same-seed variation.** Repeated runs on one seed vary (DeepSeek T3 0.63-0.94, Kimi T1 0.64-0.95), even at temperature 0; the
   reference is fully deterministic.
 - **The reference is not optimal.** It is the strongest script we wrote; T1 events are dense enough
   that it lets 1-4 recalled or damaged units through, and Kimi beats its purchasing on T3 seed 2

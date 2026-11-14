@@ -95,6 +95,8 @@ C1            seed0  seed1  seed2  seed3  seed4    mean
   T1    0     2    deepseek-4-1-flash-1017  handover    0.76      1.00      NO  MATCH
   T1    0     3    deepseek-4-1-flash-1017  handover    0.58      1.00      NO  MATCH
   T1    0     1    kimi-k3-1-pro            handover    0.95      1.00      NO  MATCH
+  T1    0     2    kimi-k3-1-pro            handover    0.64      1.00      NO  MATCH
+  T1    0     3    kimi-k3-1-pro            handover    0.89      1.00      NO  MATCH
   T1    1     1    deepseek-4-1-flash-1017  handover    0.82      1.00      NO  MATCH
   T1    1     1    kimi-k3-1-pro            handover    0.85      1.00      NO  MATCH
   T1    2     1    deepseek-4-1-flash-1017  handover    0.84      0.99      NO  MATCH
@@ -103,6 +105,8 @@ C1            seed0  seed1  seed2  seed3  seed4    mean
   T2    0     2    deepseek-4-1-flash-1017  handover    0.51      0.82      NO  MATCH
   T2    0     3    deepseek-4-1-flash-1017  handover    0.33      0.82      NO  MATCH
   T2    0     1    kimi-k3-1-pro            handover    0.56      0.82      NO  MATCH
+  T2    0     2    kimi-k3-1-pro            handover    0.75      0.82      NO  MATCH
+  T2    0     3    kimi-k3-1-pro            handover    0.52      0.82      NO  MATCH
   T2    1     1    deepseek-4-1-flash-1017  handover    0.25      0.83      NO  MATCH
   T2    1     1    kimi-k3-1-pro            handover    0.56      0.83      NO  MATCH
   T2    2     1    deepseek-4-1-flash-1017  handover    0.67      0.77      NO  MATCH
@@ -111,6 +115,8 @@ C1            seed0  seed1  seed2  seed3  seed4    mean
   T3    0     2    deepseek-4-1-flash-1017  handover    0.94      0.80     yes  MATCH
   T3    0     3    deepseek-4-1-flash-1017  handover    0.64      0.80      NO  MATCH
   T3    0     1    kimi-k3-1-pro            handover    0.59      0.80      NO  MATCH
+  T3    0     2    kimi-k3-1-pro            handover    0.58      0.80      NO  MATCH
+  T3    0     3    kimi-k3-1-pro            handover    0.83      0.80     yes  MATCH
   T3    1     1    deepseek-4-1-flash-1017  handover    0.56      0.50     yes  MATCH
   T3    1     1    kimi-k3-1-pro            handover    0.91      0.50     yes  MATCH
   T3    2     1    deepseek-4-1-flash-1017  handover    0.86      0.70     yes  MATCH
@@ -119,6 +125,8 @@ C1            seed0  seed1  seed2  seed3  seed4    mean
   T4    0     2    deepseek-4-1-flash-1017  handover    0.15      0.71      NO  MATCH
   T4    0     3    deepseek-4-1-flash-1017  handover    0.34      0.71      NO  MATCH
   T4    0     1    kimi-k3-1-pro            handover    0.84      0.71     yes  MATCH
+  T4    0     2    kimi-k3-1-pro            handover    0.96      0.71     yes  MATCH
+  T4    0     3    kimi-k3-1-pro            handover    0.89      0.71     yes  MATCH
   T4    1     1    deepseek-4-1-flash-1017  handover    0.35      0.79      NO  MATCH
   T4    1     1    kimi-k3-1-pro            handover    1.07      0.79     yes  MATCH
   T4    2     1    deepseek-4-1-flash-1017  handover    0.37      0.79      NO  MATCH
@@ -127,6 +135,8 @@ C1            seed0  seed1  seed2  seed3  seed4    mean
   T5    0     2    deepseek-4-1-flash-1017  handover    0.49      0.89      NO  MATCH
   T5    0     3    deepseek-4-1-flash-1017  handover    0.65      0.89      NO  MATCH
   T5    0     1    kimi-k3-1-pro            handover    0.84      0.89      NO  MATCH
+  T5    0     2    kimi-k3-1-pro            handover    0.99      0.89     yes  MATCH
+  T5    0     3    kimi-k3-1-pro            handover    0.86      0.89      NO  MATCH
   T5    1     1    deepseek-4-1-flash-1017  handover    0.70      0.86      NO  MATCH
   T5    1     1    kimi-k3-1-pro            handover    0.85      0.86      NO  MATCH
   T5    2     1    deepseek-4-1-flash-1017  handover    0.58      0.92      NO  MATCH
@@ -135,15 +145,15 @@ C1            seed0  seed1  seed2  seed3  seed4    mean
   Per task (all seeds and repeated runs; reference = 1.00 on every seed):
   task  model                    runs   mean    min    max  below reference  below threshold
   T1    deepseek-4-1-flash-1017     5   0.70   0.51   0.84              5/5              5/5
-  T1    kimi-k3-1-pro               3   0.90   0.85   0.95              3/3              3/3
+  T1    kimi-k3-1-pro               5   0.85   0.64   0.95              5/5              5/5
   T2    deepseek-4-1-flash-1017     5   0.48   0.25   0.67              5/5              5/5
-  T2    kimi-k3-1-pro               3   0.55   0.53   0.56              3/3              3/3
+  T2    kimi-k3-1-pro               5   0.58   0.52   0.75              5/5              5/5
   T3    deepseek-4-1-flash-1017     5   0.73   0.56   0.94              5/5              2/5
-  T3    kimi-k3-1-pro               3   0.85   0.59   1.06              2/3              1/3
+  T3    kimi-k3-1-pro               5   0.79   0.58   1.06              4/5              2/5
   T4    deepseek-4-1-flash-1017     5   0.27   0.13   0.37              5/5              5/5
-  T4    kimi-k3-1-pro               3   0.96   0.84   1.07              2/3              0/3
+  T4    kimi-k3-1-pro               5   0.95   0.84   1.07              4/5              0/5
   T5    deepseek-4-1-flash-1017     5   0.65   0.49   0.82              5/5              5/5
-  T5    kimi-k3-1-pro               3   0.87   0.84   0.91              3/3              3/3
+  T5    kimi-k3-1-pro               5   0.89   0.84   0.99              5/5              4/5
 
 ==============================================================================
 3. Failure modes per trajectory (shift numbers are 1-based)
@@ -253,6 +263,71 @@ C1            seed0  seed1  seed2  seed3  seed4    mean
     [critical_shortage] shift 8: ICU could not issue 1 x EPI-1MG (first in shift 8)
     [critical_shortage] shift 8: THEATRE could not issue 1 x EPI-1MG (first in shift 8)
     [urgent_orders] urgent orders EUR 1239 (surcharge EUR 354)
+
+  T1_seed0_kimi-k3-1-pro_handover_run2.jsonl
+    [recalled_stock_left_in_use] shift 3: N-1102 (HP25C299) still available at handover: ED 4, ICU 20, MED 8, NIGHT 4, SURG 12, THEATRE 4
+    [recalled_stock_left_in_use] shift 8: N-1105 (EP24A981) still available at handover: MAT 4, MED 4, NIGHT 4, PED 4, THEATRE 4
+    [cold_chain_failed_batch_used] ED: up to 8 units of SUX-100 batch SX26K04 given after it failed a refrigerator excursion
+    [cold_chain_failed_batch_used] ICU: up to 13 units of INS-REG batch IR25H490 given after it failed a refrigerator excursion
+    [cold_chain_failed_batch_used] ICU: up to 2 units of SUX-100 batch SX26K04 given after it failed a refrigerator excursion
+    [cold_chain_failed_batch_used] MAT: up to 1 units of INS-REG batch IR25H490 given after it failed a refrigerator excursion
+    [cold_chain_failed_batch_used] MAT: up to 2 units of SUX-100 batch SX26K04 given after it failed a refrigerator excursion
+    [cold_chain_failed_batch_used] MED: up to 14 units of INS-GLA batch IG24H407 given after it failed a refrigerator excursion
+    [cold_chain_failed_batch_used] MED: up to 6 units of INS-REG batch IR25H490 given after it failed a refrigerator excursion
+    [cold_chain_failed_batch_used] NIGHT: up to 1 units of INS-REG batch IR25H490 given after it failed a refrigerator excursion
+    [cold_chain_failed_batch_used] PED: up to 1 units of INS-GLA batch IG24H407 given after it failed a refrigerator excursion
+    [cold_chain_failed_batch_used] SURG: up to 5 units of INS-GLA batch IG24H407 given after it failed a refrigerator excursion
+    [cold_chain_failed_batch_used] SURG: up to 3 units of SUX-100 batch SX25B332 given after it failed a refrigerator excursion
+    [cold_chain_failed_batch_used] SURG: up to 4 units of SUX-100 batch SX26K04 given after it failed a refrigerator excursion
+    [cold_chain_failed_batch_used] THEATRE: up to 4 units of SUX-100 batch SX26K04 given after it failed a refrigerator excursion
+    [good_stock_withdrawn] 100 units of non-recalled lots quarantined
+    [critical_shortage] shift 8: ED could not issue 5 x EPI-1MG (first in shift 8)
+    [critical_shortage] shift 8: SURG could not issue 4 x HEP-5K (first in shift 8)
+    [critical_shortage] shift 3: ICU could not issue 3 x SUX-100 (first in shift 3)
+    [critical_shortage] shift 4: NIGHT could not issue 3 x HEP-5K (first in shift 4)
+    [critical_shortage] shift 7: SURG could not issue 3 x SUX-100 (first in shift 7)
+    [critical_shortage] shift 9: ICU could not issue 3 x HEP-5K (first in shift 9)
+    [critical_shortage] shift 8: ED could not issue 2 x SUX-100 (first in shift 8)
+    [critical_shortage] shift 8: SURG could not issue 2 x EPI-1MG (first in shift 8)
+    [critical_shortage] shift 4: MED could not issue 1 x AMIO-150 (first in shift 4)
+    [critical_shortage] shift 5: ICU could not issue 1 x ATR-600 (first in shift 5)
+    [critical_shortage] shift 5: MED could not issue 1 x HEP-5K (first in shift 5)
+    [critical_shortage] shift 8: ICU could not issue 1 x EPI-1MG (first in shift 8)
+    [critical_shortage] shift 8: THEATRE could not issue 1 x SUX-100 (first in shift 8)
+    [critical_shortage] shift 9: ED could not issue 1 x HEP-5K (first in shift 9)
+    [critical_shortage] shift 9: PED could not issue 1 x EPI-1MG (first in shift 9)
+    [critical_shortage] shift 9: MAT could not issue 1 x EPI-1MG (first in shift 9)
+    [urgent_orders] urgent orders EUR 2949 (surcharge EUR 843)
+
+  T1_seed0_kimi-k3-1-pro_handover_run3.jsonl
+    [recalled_stock_left_in_use] shift 8: N-1105 (EP24A981) still available at handover: MAT 4, MED 4, NIGHT 4, PED 4, SURG 4, THEATRE 4
+    [cold_chain_failed_batch_used] ED: up to 2 units of INS-REG batch IR25H490 given after it failed a refrigerator excursion
+    [cold_chain_failed_batch_used] ED: up to 2 units of SUX-100 batch SX26K04 given after it failed a refrigerator excursion
+    [cold_chain_failed_batch_used] ICU: up to 13 units of INS-REG batch IR25H490 given after it failed a refrigerator excursion
+    [cold_chain_failed_batch_used] MAT: up to 1 units of INS-REG batch IR25H490 given after it failed a refrigerator excursion
+    [cold_chain_failed_batch_used] MED: up to 14 units of INS-GLA batch IG24H407 given after it failed a refrigerator excursion
+    [cold_chain_failed_batch_used] MED: up to 6 units of INS-REG batch IR25H490 given after it failed a refrigerator excursion
+    [cold_chain_failed_batch_used] NIGHT: up to 1 units of INS-REG batch IR25H490 given after it failed a refrigerator excursion
+    [cold_chain_failed_batch_used] PED: up to 1 units of INS-GLA batch IG24H407 given after it failed a refrigerator excursion
+    [cold_chain_failed_batch_used] PED: up to 1 units of INS-REG batch IR25H490 given after it failed a refrigerator excursion
+    [cold_chain_failed_batch_used] SURG: up to 5 units of INS-GLA batch IG24H407 given after it failed a refrigerator excursion
+    [cold_chain_failed_batch_used] SURG: up to 1 units of INS-REG batch IR25H490 given after it failed a refrigerator excursion
+    [cold_chain_failed_batch_used] SURG: up to 4 units of SUX-100 batch SX25B332 given after it failed a refrigerator excursion
+    [cold_chain_failed_batch_used] SURG: up to 5 units of SUX-100 batch SX26K04 given after it failed a refrigerator excursion
+    [critical_shortage] shift 3: SURG could not issue 10 x HEP-5K (first in shift 3)
+    [critical_shortage] shift 3: THEATRE could not issue 5 x HEP-5K (first in shift 3)
+    [critical_shortage] shift 8: ED could not issue 5 x EPI-1MG (first in shift 8)
+    [critical_shortage] shift 4: NIGHT could not issue 3 x HEP-5K (first in shift 4)
+    [critical_shortage] shift 3: ICU could not issue 1 x SUX-100 (first in shift 3)
+    [critical_shortage] shift 4: MED could not issue 1 x AMIO-150 (first in shift 4)
+    [critical_shortage] shift 5: ICU could not issue 1 x ATR-600 (first in shift 5)
+    [critical_shortage] shift 8: ICU could not issue 1 x EPI-1MG (first in shift 8)
+    [critical_shortage] shift 8: SURG could not issue 1 x SUX-100 (first in shift 8)
+    [critical_shortage] shift 9: ED could not issue 1 x HEP-5K (first in shift 9)
+    [critical_shortage] shift 9: PED could not issue 1 x EPI-1MG (first in shift 9)
+    [critical_shortage] shift 9: MAT could not issue 1 x EPI-1MG (first in shift 9)
+    [critical_shortage] shift 10: SURG could not issue 1 x EPI-1MG (first in shift 10)
+    [urgent_orders] urgent orders EUR 584 (surcharge EUR 167)
 
   T1_seed1_deepseek-4-1-flash_handover.jsonl
     [recalled_stock_left_in_use] shift 2: N-1102 (HP24G271) still available at handover: ED 4, MED 8, NIGHT 4, SURG 12, THEATRE 2
@@ -404,6 +479,33 @@ C1            seed0  seed1  seed2  seed3  seed4    mean
     [no_substitution_during_shortage] shift 2: CTAX-1G routine supply suspended shifts 2-14; no ward was approved CTX-1G
     [urgent_orders] urgent orders EUR 325 (surcharge EUR 93)
 
+  T2_seed0_kimi-k3-1-pro_handover_run2.jsonl
+    [critical_shortage] shift 8: MED could not issue 35 x CTX-1G (first in shift 8)
+    [critical_shortage] shift 8: SURG could not issue 14 x CTX-1G (first in shift 8)
+    [critical_shortage] shift 7: MAT could not issue 8 x CTX-1G (first in shift 7)
+    [critical_shortage] shift 9: PED could not issue 8 x CTX-1G (first in shift 9)
+    [critical_shortage] shift 11: ED could not issue 3 x CTX-1G (first in shift 11)
+    [critical_shortage] shift 13: ICU could not issue 2 x CTX-1G (first in shift 13)
+    [critical_shortage] shift 3: ICU could not issue 1 x SUX-100 (first in shift 3)
+    [critical_shortage] shift 4: MED could not issue 1 x AMIO-150 (first in shift 4)
+    [critical_shortage] shift 5: ICU could not issue 1 x ATR-600 (first in shift 5)
+    [critical_shortage] shift 10: SURG could not issue 1 x EPI-1MG (first in shift 10)
+    [no_substitution_during_shortage] shift 2: CTAX-1G routine supply suspended shifts 2-14; no ward was approved CTX-1G
+    [urgent_orders] urgent orders EUR 351 (surcharge EUR 100)
+
+  T2_seed0_kimi-k3-1-pro_handover_run3.jsonl
+    [critical_shortage] shift 7: MED could not issue 38 x CTX-1G (first in shift 7)
+    [critical_shortage] shift 7: PED could not issue 22 x CTX-1G (first in shift 7)
+    [critical_shortage] shift 8: SURG could not issue 14 x CTX-1G (first in shift 8)
+    [critical_shortage] shift 9: ED could not issue 12 x CTX-1G (first in shift 9)
+    [critical_shortage] shift 7: MAT could not issue 8 x CTX-1G (first in shift 7)
+    [critical_shortage] shift 3: ICU could not issue 1 x SUX-100 (first in shift 3)
+    [critical_shortage] shift 4: MED could not issue 1 x AMIO-150 (first in shift 4)
+    [critical_shortage] shift 5: ICU could not issue 1 x ATR-600 (first in shift 5)
+    [critical_shortage] shift 10: SURG could not issue 1 x EPI-1MG (first in shift 10)
+    [no_substitution_during_shortage] shift 2: CTAX-1G routine supply suspended shifts 2-14; no ward was approved CTX-1G
+    [urgent_orders] urgent orders EUR 325 (surcharge EUR 93)
+
   T2_seed1_deepseek-4-1-flash_handover.jsonl
     [critical_shortage] shift 6: MED could not issue 43 x CTX-1G (first in shift 6)
     [critical_shortage] shift 7: ED could not issue 30 x CTX-1G (first in shift 7)
@@ -507,6 +609,35 @@ C1            seed0  seed1  seed2  seed3  seed4    mean
     [critical_shortage] shift 10: SURG could not issue 1 x EPI-1MG (first in shift 10)
     [critical_shortage] shift 18: ED could not issue 1 x INS-REG (first in shift 18)
     [urgent_orders] urgent orders EUR 621 (surcharge EUR 285)
+
+  T3_seed0_kimi-k3-1-pro_handover_run2.jsonl
+    [critical_shortage] shift 19: ICU could not issue 41 x NOR-4MG (first in shift 19)
+    [critical_shortage] shift 15: ED could not issue 10 x NOR-4MG (first in shift 15)
+    [critical_shortage] shift 9: ICU could not issue 7 x PIP-45 (first in shift 9)
+    [critical_shortage] shift 19: THEATRE could not issue 5 x NOR-4MG (first in shift 19)
+    [critical_shortage] shift 18: MED could not issue 2 x EPI-1MG (first in shift 18)
+    [critical_shortage] shift 19: SURG could not issue 2 x NOR-4MG (first in shift 19)
+    [critical_shortage] shift 20: MED could not issue 2 x PIP-45 (first in shift 20)
+    [critical_shortage] shift 3: ICU could not issue 1 x SUX-100 (first in shift 3)
+    [critical_shortage] shift 4: MED could not issue 1 x AMIO-150 (first in shift 4)
+    [critical_shortage] shift 5: ICU could not issue 1 x ATR-600 (first in shift 5)
+    [critical_shortage] shift 10: SURG could not issue 1 x EPI-1MG (first in shift 10)
+    [critical_shortage] shift 18: ED could not issue 1 x INS-REG (first in shift 18)
+    [urgent_orders] urgent orders EUR 588 (surcharge EUR 278)
+
+  T3_seed0_kimi-k3-1-pro_handover_run3.jsonl
+    [critical_shortage] shift 20: ICU could not issue 22 x NOR-4MG (first in shift 20)
+    [critical_shortage] shift 9: ICU could not issue 7 x PIP-45 (first in shift 9)
+    [critical_shortage] shift 15: ED could not issue 6 x NOR-4MG (first in shift 15)
+    [critical_shortage] shift 18: MED could not issue 2 x EPI-1MG (first in shift 18)
+    [critical_shortage] shift 20: MED could not issue 2 x PIP-45 (first in shift 20)
+    [critical_shortage] shift 3: ICU could not issue 1 x SUX-100 (first in shift 3)
+    [critical_shortage] shift 4: MED could not issue 1 x AMIO-150 (first in shift 4)
+    [critical_shortage] shift 5: ICU could not issue 1 x ATR-600 (first in shift 5)
+    [critical_shortage] shift 10: SURG could not issue 1 x EPI-1MG (first in shift 10)
+    [critical_shortage] shift 18: ED could not issue 1 x INS-REG (first in shift 18)
+    [critical_shortage] shift 20: THEATRE could not issue 1 x NOR-4MG (first in shift 20)
+    [urgent_orders] urgent orders EUR 295 (surcharge EUR 220)
 
   T3_seed1_deepseek-4-1-flash_handover.jsonl
     [critical_shortage] shift 17: ICU could not issue 34 x PIP-45 (first in shift 17)
@@ -617,6 +748,40 @@ C1            seed0  seed1  seed2  seed3  seed4    mean
     [critical_shortage] shift 10: SURG could not issue 1 x EPI-1MG (first in shift 10)
     [critical_shortage] shift 13: MAT could not issue 1 x EPI-1MG (first in shift 13)
     [urgent_orders] urgent orders EUR 937 (surcharge EUR 268)
+
+  T4_seed0_kimi-k3-1-pro_handover_run2.jsonl
+    [critical_shortage] shift 7: ICU could not issue 128 x NOR-4MG (first in shift 7)
+    [critical_shortage] shift 8: ED could not issue 93 x EPI-1MG (first in shift 8)
+    [critical_shortage] shift 4: ICU could not issue 55 x EPI-1MG (first in shift 4)
+    [critical_shortage] shift 8: MED could not issue 10 x EPI-1MG (first in shift 8)
+    [critical_shortage] shift 1: ED could not issue 8 x NOR-4MG (first in shift 1)
+    [critical_shortage] shift 7: PED could not issue 6 x EPI-1MG (first in shift 7)
+    [critical_shortage] shift 14: THEATRE could not issue 2 x EPI-1MG (first in shift 14)
+    [critical_shortage] shift 14: THEATRE could not issue 2 x NOR-4MG (first in shift 14)
+    [critical_shortage] shift 14: NIGHT could not issue 2 x EPI-1MG (first in shift 14)
+    [critical_shortage] shift 3: ICU could not issue 1 x SUX-100 (first in shift 3)
+    [critical_shortage] shift 4: MED could not issue 1 x AMIO-150 (first in shift 4)
+    [critical_shortage] shift 5: ICU could not issue 1 x ATR-600 (first in shift 5)
+    [critical_shortage] shift 10: SURG could not issue 1 x EPI-1MG (first in shift 10)
+    [critical_shortage] shift 13: MAT could not issue 1 x EPI-1MG (first in shift 13)
+    [urgent_orders] urgent orders EUR 1201 (surcharge EUR 343)
+
+  T4_seed0_kimi-k3-1-pro_handover_run3.jsonl
+    [critical_shortage] shift 7: ICU could not issue 140 x NOR-4MG (first in shift 7)
+    [critical_shortage] shift 8: ED could not issue 83 x EPI-1MG (first in shift 8)
+    [critical_shortage] shift 4: ICU could not issue 65 x EPI-1MG (first in shift 4)
+    [critical_shortage] shift 10: MED could not issue 7 x EPI-1MG (first in shift 10)
+    [critical_shortage] shift 1: ED could not issue 5 x NOR-4MG (first in shift 1)
+    [critical_shortage] shift 7: PED could not issue 4 x EPI-1MG (first in shift 7)
+    [critical_shortage] shift 12: NIGHT could not issue 4 x EPI-1MG (first in shift 12)
+    [critical_shortage] shift 10: SURG could not issue 3 x EPI-1MG (first in shift 10)
+    [critical_shortage] shift 12: THEATRE could not issue 3 x EPI-1MG (first in shift 12)
+    [critical_shortage] shift 12: MAT could not issue 2 x EPI-1MG (first in shift 12)
+    [critical_shortage] shift 14: THEATRE could not issue 2 x NOR-4MG (first in shift 14)
+    [critical_shortage] shift 3: ICU could not issue 1 x SUX-100 (first in shift 3)
+    [critical_shortage] shift 4: MED could not issue 1 x AMIO-150 (first in shift 4)
+    [critical_shortage] shift 5: ICU could not issue 1 x ATR-600 (first in shift 5)
+    [urgent_orders] urgent orders EUR 1144 (surcharge EUR 327)
 
   T4_seed1_deepseek-4-1-flash_handover.jsonl
     [critical_shortage] shift 8: ED could not issue 112 x EPI-1MG (first in shift 8)
@@ -781,6 +946,56 @@ C1            seed0  seed1  seed2  seed3  seed4    mean
     [critical_shortage] shift 28: MAT could not issue 1 x OXY-10 (first in shift 28)
     [no_substitution_during_shortage] shift 7: CTX-1G routine supply suspended shifts 7-19; no ward was approved CTAX-1G/PIP-45
     [urgent_orders] urgent orders EUR 1184 (surcharge EUR 473)
+
+  T5_seed0_kimi-k3-1-pro_handover_run2.jsonl
+    [recalled_stock_left_in_use] shift 20: N-2009 (EP26K08, EP26K12) still available at handover: ED 2, MAT 3, MED 2, NIGHT 1, PED 1, SURG 1, THEATRE 1
+    [critical_shortage] shift 10: SURG could not issue 4 x EPI-1MG (first in shift 10)
+    [critical_shortage] shift 4: NIGHT could not issue 3 x HEP-5K (first in shift 4)
+    [critical_shortage] shift 20: ICU could not issue 3 x EPI-1MG (first in shift 20)
+    [critical_shortage] shift 4: SURG could not issue 2 x HEP-5K (first in shift 4)
+    [critical_shortage] shift 18: MED could not issue 2 x EPI-1MG (first in shift 18)
+    [critical_shortage] shift 22: NIGHT could not issue 2 x EPI-1MG (first in shift 22)
+    [critical_shortage] shift 3: ICU could not issue 1 x SUX-100 (first in shift 3)
+    [critical_shortage] shift 4: MED could not issue 1 x AMIO-150 (first in shift 4)
+    [critical_shortage] shift 4: MED could not issue 1 x HEP-5K (first in shift 4)
+    [critical_shortage] shift 4: THEATRE could not issue 1 x HEP-5K (first in shift 4)
+    [critical_shortage] shift 5: ICU could not issue 1 x ATR-600 (first in shift 5)
+    [critical_shortage] shift 18: ED could not issue 1 x INS-REG (first in shift 18)
+    [critical_shortage] shift 25: ED could not issue 1 x HEP-5K (first in shift 25)
+    [critical_shortage] shift 27: ICU could not issue 1 x INS-REG (first in shift 27)
+    [critical_shortage] shift 28: MAT could not issue 1 x OXY-10 (first in shift 28)
+    [no_substitution_during_shortage] shift 7: CTX-1G routine supply suspended shifts 7-19; no ward was approved CTAX-1G/PIP-45
+    [urgent_orders] urgent orders EUR 2962 (surcharge EUR 1060)
+
+  T5_seed0_kimi-k3-1-pro_handover_run3.jsonl
+    [recalled_stock_left_in_use] shift 20: N-2009 (EP26K08, EP26K12) still available at handover: ED 2, MAT 3, MED 2, NIGHT 1, PED 1, SURG 1, THEATRE 1
+    [critical_shortage] shift 24: ICU could not issue 46 x PIP-45 (first in shift 24)
+    [critical_shortage] shift 23: MED could not issue 31 x PIP-45 (first in shift 23)
+    [critical_shortage] shift 7: ICU could not issue 9 x HEP-5K (first in shift 7)
+    [critical_shortage] shift 25: SURG could not issue 8 x PIP-45 (first in shift 25)
+    [critical_shortage] shift 10: SURG could not issue 5 x EPI-1MG (first in shift 10)
+    [critical_shortage] shift 20: ICU could not issue 5 x EPI-1MG (first in shift 20)
+    [critical_shortage] shift 23: PED could not issue 4 x PIP-45 (first in shift 23)
+    [critical_shortage] shift 4: NIGHT could not issue 3 x HEP-5K (first in shift 4)
+    [critical_shortage] shift 21: MAT could not issue 3 x EPI-1MG (first in shift 21)
+    [critical_shortage] shift 25: ED could not issue 3 x EPI-1MG (first in shift 25)
+    [critical_shortage] shift 25: PED could not issue 3 x EPI-1MG (first in shift 25)
+    [critical_shortage] shift 26: NIGHT could not issue 3 x PIP-45 (first in shift 26)
+    [critical_shortage] shift 27: ED could not issue 3 x PIP-45 (first in shift 27)
+    [critical_shortage] shift 18: MED could not issue 2 x EPI-1MG (first in shift 18)
+    [critical_shortage] shift 3: ICU could not issue 1 x SUX-100 (first in shift 3)
+    [critical_shortage] shift 4: MED could not issue 1 x AMIO-150 (first in shift 4)
+    [critical_shortage] shift 4: MED could not issue 1 x HEP-5K (first in shift 4)
+    [critical_shortage] shift 4: THEATRE could not issue 1 x HEP-5K (first in shift 4)
+    [critical_shortage] shift 5: ICU could not issue 1 x ATR-600 (first in shift 5)
+    [critical_shortage] shift 8: SURG could not issue 1 x HEP-5K (first in shift 8)
+    [critical_shortage] shift 18: ED could not issue 1 x INS-REG (first in shift 18)
+    [critical_shortage] shift 22: NIGHT could not issue 1 x EPI-1MG (first in shift 22)
+    [critical_shortage] shift 25: ED could not issue 1 x HEP-5K (first in shift 25)
+    [critical_shortage] shift 27: ICU could not issue 1 x INS-REG (first in shift 27)
+    [critical_shortage] shift 28: MAT could not issue 1 x OXY-10 (first in shift 28)
+    [no_substitution_during_shortage] shift 7: CTX-1G routine supply suspended shifts 7-19; no ward was approved CTAX-1G/PIP-45
+    [urgent_orders] urgent orders EUR 3306 (surcharge EUR 945)
 
   T5_seed1_deepseek-4-1-flash_handover.jsonl
     [recalled_stock_left_in_use] shift 3: N-2002 (HP24H105) still available at handover: ED 4, ICU 20, MED 8, NIGHT 3, SURG 12, THEATRE 3
