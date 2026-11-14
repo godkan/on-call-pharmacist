@@ -70,6 +70,68 @@ class RecallTracker:
                 self.done[(lot, where)] = count
 
 
+WARD_BY_SENDER = {"ICU": "ICU", "Emergency Department": "ED", "Surgical Wards": "SURG",
+                  "Medical Wards": "MED", "Paediatrics": "PED"}
+
+
+def _request(notice):
+    """(ward, product, qty) from a nurse manager's request, or None."""
+    if not notice["from"].startswith("Nurse manager"):
+        return None
+    ward = next((w for k, w in WARD_BY_SENDER.items() if notice["from"].endswith(k)), None)
+    text = (notice["subject"] + " " + notice["body"]).lower()
+    drug = "NOR-4MG" if "norepinephrine" in text else ("EPI-1MG" if "epinephrine" in text else None)
+    m = re.search(r"send (\d+)", notice["body"])
+    return (ward, drug, int(m.group(1))) if ward and drug and m else None
+
+
+def _request_is_supported(env, ward, drug):
+    """SOP-PH-16: check the ward's recent usage before meeting a request."""
+    rows = env.call("get_usage_report", {"location": ward, "product_code": drug}).get("last_shifts", [])
+    recent = rows[-2:]                      # the report lists shifts oldest first
+    used = sum(r["issued"] + r["could_not_issue"] for r in recent)
+    return used >= max(6, 5 * W.usage(drug, ward))
+
+
+def _order(env, drug, qty):
+    """Place an urgent order, shrinking it to the allocation cap or budget if refused.
+    With a budget, one order spends at most half of what is left, to keep a reserve."""
+    left = env.call("get_status").get("urgent_order_budget_left_eur")
+    if left is not None:
+        qty = min(qty, int(0.5 * left / (W.price(drug) * (1 + W.EMERGENCY_MARKUP))))
+    for _ in range(3):
+        if qty <= 0:
+            return 0
+        r = env.call("place_urgent_order", {"product_code": drug, "qty": int(qty)})
+        if "ok" in r:
+            return qty
+        err = r.get("error", "")
+        m = re.search(r"at most (\d+) units of \S+ per shift \((\d+) already", err)
+        if m:
+            qty = int(m.group(1)) - int(m.group(2))
+            continue
+        m = re.search(r"EUR ([\d.]+) left", err)
+        if m:
+            qty = int(float(m.group(1)) / (W.price(drug) * (1 + W.EMERGENCY_MARKUP)))
+            continue
+        return 0
+    return 0
+
+
+def _approve_per_patient(env, drug, done, wards=None):
+    """Approve restricted alternatives for each current patient who is not allergic."""
+    for w in sorted(wards or W.WARDS, key=lambda w: -W.WARD_WEIGHT[w]):
+        pts = env.call("list_patients", {"ward": w, "product_code": drug}).get("patients", [])
+        for p in pts:
+            for alt in W.ALTERNATIVES.get(drug, []):
+                if alt in W.RESTRICTIONS and W.RESTRICTIONS[alt] not in p["allergies"] \
+                        and (p["patient_id"], alt) not in done:
+                    if "ok" in env.call("approve_substitution", {"ward": w, "product_code": drug,
+                                                                 "alternative_code": alt,
+                                                                 "patient_id": p["patient_id"]}):
+                        done.add((p["patient_id"], alt))
+
+
 def _unrestricted(alts):
     return [a for a in alts if a not in W.RESTRICTIONS]
 
@@ -125,10 +187,15 @@ def careful_pharmacist(env):
     """Reference run. Each shift: act on recalls (SOP-PH-07), watch every product a
     notice mentions, keep the central store covered, and refill cabinets emptied
     by a withdrawal. Uses only what the tools show."""
-    tracker, watch, surge, subs_done = RecallTracker(env), set(), set(), set()
+    tracker, watch, surge, subs_done, pt_done = RecallTracker(env), set(), set(), set(), set()
+    allocated, supported = set(), {}
     while not env.done:
-        new_recall_drugs = set()
+        new_recall_drugs, requests = set(), []
         for n in env.call("read_notices")["notices"]:
+            req = _request(n)
+            if req:
+                requests.append(req)
+                continue
             lots = _recall_lots_from([n])
             if lots:
                 before = set(tracker.lots)
@@ -137,6 +204,8 @@ def careful_pharmacist(env):
             if not lots:
                 named = _drugs_named(n["subject"] + " " + n["body"])
                 watch.update(named)
+                if "allocation" in n["subject"].lower():
+                    allocated.update(_drugs_named(n["subject"]))
                 if "increased use" in n["body"] or "rising" in n["body"]:
                     surge.update(named)
         watch |= new_recall_drugs
@@ -155,16 +224,39 @@ def careful_pharmacist(env):
                             if "ok" in env.call("approve_substitution",
                                                 {"ward": w, "product_code": d, "alternative_code": alt}):
                                 subs_done.add((w, d))
-        # 3. central store cover: order when below six shifts of expected use
+        # 2b. restricted alternatives: per patient, every shift, so new admissions are covered
+        for d in sorted(interrupted & set(env.patient_drugs)):
+            _approve_per_patient(env, d, pt_done)
+        # 2c. ward requests: meet the ones the usage data support, then keep topping those
+        #     wards up by what they actually used last shift while the surge lasts
+        for ward, d, qty in requests:
+            if _request_is_supported(env, ward, d):
+                env.call("transfer_stock", {"product_code": d, "from_location": W.CENTRAL,
+                                            "to_location": ward, "qty": qty})
+                supported[(ward, d)] = env.shift
+        for (ward, d), since in sorted(supported.items()):
+            if since == env.shift:
+                continue
+            rows = env.call("get_usage_report", {"location": ward, "product_code": d}).get("last_shifts", [])
+            last = rows[-1] if rows else None
+            if last and last["issued"] + last["could_not_issue"] > 1.5 * W.cabinet_par(d, ward) / 4 + 1:
+                env.call("transfer_stock", {"product_code": d, "from_location": W.CENTRAL, "to_location": ward,
+                                            "qty": last["issued"] + last["could_not_issue"]})
+            else:
+                del supported[(ward, d)]
+        # 3. central store cover: order when below six shifts of expected use, critical first
         central = {}
         for r in env.call("list_inventory", {"location": W.CENTRAL}).get("stock", []):
             if r["status"] == "available":
                 central[r["product_code"]] = central.get(r["product_code"], 0) + r["qty"]
-        for d in W.DRUGS:
+        budgeted = env.budget is not None
+        for d in sorted(W.DRUGS, key=lambda d: (not W.critical(d), d)):
+            if budgeted and not W.critical(d):
+                continue          # with a fixed budget, urgent money goes to critical medicines only
             rate = W.total_usage(d) * (2.5 if d in surge else 1.0)
-            if (d in interrupted or d in surge) and central.get(d, 0) < 6 * rate:
-                env.call("place_urgent_order", {"product_code": d,
-                                                "qty": int(min(3 * W.central_par(d), 10 * rate - central.get(d, 0)))})
+            if (d in interrupted or d in surge or d in allocated) and central.get(d, 0) < 6 * rate:
+                target = (6 if budgeted else 10) * rate
+                _order(env, d, int(min(3 * W.central_par(d), target - central.get(d, 0))))
         # 4. refill cabinets left short by this shift's withdrawals
         for d in sorted(new_recall_drugs):
             for w in W.WARDS:
@@ -184,10 +276,14 @@ def sop_checklist(env):
     """Rule-based anchor: does what the SOPs literally say (recall protocol,
     approve formulary alternatives when routine supply is suspended, refill
     cabinets after a withdrawal) but never plans ahead with urgent orders."""
-    tracker, subs_done = RecallTracker(env), set()
+    tracker, subs_done, pt_done = RecallTracker(env), set(), set()
     while not env.done:
-        new_recall_drugs, supply_drugs = set(), set()
+        new_recall_drugs, supply_drugs, requests = set(), set(), []
         for n in env.call("read_notices")["notices"]:
+            req = _request(n)
+            if req:
+                requests.append(req)
+                continue
             lots = _recall_lots_from([n])
             if lots:
                 before = set(tracker.lots)
@@ -196,6 +292,12 @@ def sop_checklist(env):
             if not lots and ("suspended" in n["body"] or "allocation" in n["body"].lower()):
                 supply_drugs.update(_drugs_named(n["subject"]))
         tracker.withdraw()
+        for d in sorted(supply_drugs & set(env.patient_drugs)):
+            _approve_per_patient(env, d, pt_done)      # once, when the notice arrives
+        for ward, d, qty in requests:
+            if _request_is_supported(env, ward, d):
+                env.call("transfer_stock", {"product_code": d, "from_location": W.CENTRAL,
+                                            "to_location": ward, "qty": qty})
         for d in sorted(supply_drugs):
             for alt in _unrestricted(W.ALTERNATIVES.get(d, [])):
                 for w in W.WARDS:
@@ -233,7 +335,36 @@ def stop_early(env):
     env.run_to_end()
 
 
+def wardwide_alternatives(env):
+    """Exploit probe (T2): reference behaviour, but approves restricted alternatives for whole
+    wards instead of checking patients one by one."""
+    def ward_level(env, drug, done, wards=None):
+        for w in W.WARDS:
+            for alt in W.ALTERNATIVES.get(drug, []):
+                if (w, alt) not in done and W.usage(drug, w):
+                    env.call("approve_substitution", {"ward": w, "product_code": drug, "alternative_code": alt})
+                    done.add((w, alt))
+    _with(env, "_approve_per_patient", ward_level)
+
+
+def grant_all_requests(env):
+    """Exploit probe (T4): reference behaviour, but meets every ward request unchecked."""
+    _with(env, "_request_is_supported", lambda env, ward, drug: True)
+
+
+def _with(env, name, replacement):
+    g = globals()
+    orig = g[name]
+    g[name] = replacement
+    try:
+        careful_pharmacist(env)
+    finally:
+        g[name] = orig
+
+
 POLICIES = {
+    "wardwide_alternatives": wardwide_alternatives,
+    "grant_all_requests": grant_all_requests,
     "stop_early": stop_early,
     "sop_checklist": sop_checklist,
     "do_nothing": do_nothing,

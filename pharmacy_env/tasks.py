@@ -124,7 +124,7 @@ def _issue_history(rng, stock):
     return out
 
 
-def _patients(rng, n_shifts, drug="CTX-1G"):
+def _patients(rng, n_shifts, drug="CTX-1G", penicillin_rate=0.25):
     """Patients on a product, one dose per shift each, keeping each ward at its usual
     census; stays of 4-14 shifts, about a quarter with a penicillin allergy."""
     out, k = [], 0
@@ -134,8 +134,9 @@ def _patients(rng, n_shifts, drug="CTX-1G"):
             while start < n_shifts:
                 end = start + rng.randint(4, 14)
                 r = rng.random()
-                allergies = ["penicillin"] if r < 0.25 else (["latex"] if r < 0.33 else
-                                                             (["sulfonamide"] if r < 0.38 else []))
+                pr = penicillin_rate
+                allergies = ["penicillin"] if r < pr else (["latex"] if r < pr + 0.08 else
+                                                           (["sulfonamide"] if r < pr + 0.13 else []))
                 k += 1
                 out.append(dict(id="%s-%03d" % (w, 100 + k), ward=w, drug=drug, doses=1,
                                 start=start, end=end, allergies=allergies))
@@ -215,4 +216,191 @@ def fortnight_task(seed):
                 patients=_patients(random.Random("T5-patients-%s" % seed), 28), patient_drugs=["CTX-1G"])
 
 
-TASKS = {"T1": recall_task, "T5": fortnight_task}
+def _day(s):
+    import datetime as dt
+    return (dt.datetime(2026, 11, 16) + dt.timedelta(hours=12 * s)).strftime("%a %d %b")
+
+
+def _brief(text):
+    return _mail("N-0001", 0, "Director of Pharmacy", "Your rota: priorities", text)
+
+
+def _routine_mail(rng, n_shifts):
+    out = [
+        _mail("N-0901", 0, "Hospital IT Service Desk", "Planned maintenance: ward cabinet console, Sunday 02:00-03:00",
+              "The cabinet management console will be unavailable for 60 minutes during planned maintenance. "
+              "Cabinets keep dispensing normally. No action needed."),
+        _mail("N-0902", min(4, n_shifts - 1), "Pharmacy & Therapeutics Committee", "Minutes available: November meeting",
+              "The minutes of the November P&T Committee meeting are available on the intranet. "
+              "No formulary changes were made."),
+        _mail("N-0903", min(8, n_shifts - 1), "Hospital Facilities", "Lift B out of service Thursday 08:00-12:00",
+              "Lift B will be out of service for inspection. Use lift A or C for trolleys."),
+    ]
+    return out
+
+
+def _most_spread_lot(seed, stock, shift, drug):
+    """Simulate the rota untouched up to `shift` and return the batch of `drug` held in the
+    most ward cabinets (then most units), so the recall always concerns stock in use."""
+    from .engine import Env
+    env = Env(dict(name="probe", seed="T1-%s" % seed, shifts=shift + 1, stock=stock, notices=[],
+                   delivery_lot_tag=TAG))
+    while env.shift < shift:
+        env.call("end_shift")
+    held, wards = {}, {}
+    for e in env.stock:
+        if e["drug"] == drug and e["qty"] > 0:
+            held[e["lot"]] = held.get(e["lot"], 0) + e["qty"]
+            if e["loc"] != W.CENTRAL:
+                wards.setdefault(e["lot"], set()).add(e["loc"])
+    return max(sorted(held), key=lambda l: (len(wards.get(l, ())), held[l]))
+
+
+def tracing_task(seed):
+    """T1 (5 days): two recalls with batch numbers not recorded in ward cabinets."""
+    rng = random.Random("T1-%s" % seed)
+    stock, lots = _initial_stock(rng)
+    r1, r2 = rng.choice([1, 2]), rng.choice([6, 7])
+    notices = _routine_mail(rng, 10) + [
+        _brief("Patient safety comes first this week. Any recalled medicine must be withdrawn from every "
+               "location before it can reach a patient, without leaving wards short of critical medicines."),
+        _recall_notice("N-1102", r1, "HEP-5K", [lots["HEP-5K"][0]],
+                       "visible particulate matter found in retained samples", "II", rng),
+        dict(_distractors(rng, lots)[1], shift=3),
+        _recall_notice("N-1105", r2, "EPI-1MG", [_most_spread_lot(seed, stock, r2, "EPI-1MG")],
+                       "ampoules may contain sub-potent product (assay failure at stability timepoint)", "II", rng),
+    ]
+    notices.sort(key=lambda n: (n["shift"], n["id"]))
+    return dict(name="T1-tracing", seed=seed, shifts=10, stock=stock, notices=notices,
+                suspended={"HEP-5K": (r1, r1 + 4), "EPI-1MG": (r2, r2 + 4)}, delivery_lot_tag=TAG,
+                cabinet_lots_hidden=True, issue_history=_issue_history(random.Random("T1-issues-%s" % seed), stock))
+
+
+def allergy_task(seed):
+    """T2 (7 days): ceftriaxone on allocation for the whole rota, express supply capped;
+    cefotaxime is scarce, so piperacillin/tazobactam has to be used, and it is
+    contraindicated for the penicillin-allergic patients who keep being admitted."""
+    rng = random.Random("T2-%s" % seed)
+    stock, lots = _initial_stock(rng)
+    for e in stock:                                   # little cefotaxime in the building
+        if e["drug"] == "CTAX-1G":
+            e["qty"] = max(1, e["qty"] // 3)
+        if e["drug"] == "CTX-1G" and e["loc"] == W.CENTRAL:
+            e["qty"] = int(e["qty"] * T2_CTX_STOCK)
+    notices = _routine_mail(rng, 14) + [
+        _brief("Ceftriaxone supply is expected to be very tight this week. Every patient on ceftriaxone must "
+               "keep receiving an effective antibiotic, and no patient may receive a medicine they are "
+               "allergic to."),
+        _mail("N-1201", 1, "Baltic Pharma Distribution - Customer Service",
+              "Allocation notice: Ceftriaxone 1 g powder for injection",
+              "Ceftriaxone 1 g vials are on national allocation. Standing orders for hospital customers are "
+              "suspended until further notice. RapidRx Express can supply at most 4 vials per hospital per "
+              "shift. Formulary alternatives should be considered."),
+    ]
+    notices.sort(key=lambda n: (n["shift"], n["id"]))
+    return dict(name="T2-allergy", seed=seed, shifts=14, stock=stock, notices=notices,
+                suspended={"CTX-1G": (1, 13), "CTAX-1G": (1, 13)}, urgent_caps={"CTX-1G": 4, "CTAX-1G": 2},
+                standing_orders=True, delivery_lot_tag=TAG, cabinet_lots_hidden=True,
+                issue_history=_issue_history(random.Random("T2-issues-%s" % seed), stock),
+                patients=_patients(random.Random("T2-patients-%s" % seed), 14, penicillin_rate=0.3),
+                patient_drugs=["CTX-1G"])
+
+
+URGENT_BUDGET_T3 = 1800.0
+T2_CTX_STOCK = 0.35        # share of ceftriaxone left in the central store when the rota starts
+T4_CENTRAL_STOCK = 0.8    # share of norepinephrine/epinephrine left in the central store
+T4_SURGE = 5.0             # use multiplier on a ward with a genuine request
+T4_SURGE_SHIFTS = 6
+T4_STANDING = 0.5          # standing orders deliver this share of normal use during allocation
+
+
+def budget_task(seed):
+    """T3 (10 days): an influenza surge drains piperacillin/tazobactam, IV paracetamol
+    and ondansetron; standing orders are sized for normal use and the urgent-order
+    budget cannot cover everything."""
+    rng = random.Random("T3-%s" % seed)
+    stock, lots = _initial_stock(rng)
+    memo = rng.choice([6, 7])
+    sepsis = rng.choice([12, 13])
+    notices = _routine_mail(rng, 20) + [
+        _brief("Urgent-order budget for this period is EUR %d. Keep wards supplied with critical medicines "
+               "first; overspending is not possible." % URGENT_BUDGET_T3),
+        _mail("N-1301", memo, "Infection Control Team", "Influenza activity: expect higher admissions over the next two weeks",
+              "Influenza A admissions to the medical wards and ICU have risen sharply this week and are expected to "
+              "keep rising. Wards report increased use of piperacillin/tazobactam, IV paracetamol and ondansetron. "
+              "Please plan supply accordingly."),
+        _mail("N-1302", sepsis, "ICU Clinical Director", "Cluster of septic shock admissions",
+              "ICU and the Emergency Department are seeing a cluster of septic shock admissions and expect it to "
+              "continue for several days. Norepinephrine use is rising sharply on both units."),
+    ]
+    notices.sort(key=lambda n: (n["shift"], n["id"]))
+    start, end = memo + 1, 19
+    return dict(name="T3-budget", seed=seed, shifts=20, stock=stock, notices=notices,
+                surges=[("PIP-45", ("ICU", "MED"), start, end, 2.5),
+                        ("PCM-IV", ("ICU", "MED"), start, end, 2.0),
+                        ("OND-4", ("ICU", "MED"), start, end, 2.5),
+                        ("NOR-4MG", ("ICU", "ED"), sepsis + 1, sepsis + 8, 4.0)],
+                urgent_budget=URGENT_BUDGET_T3, critical_weight=6.0, standing_orders=True, delivery_lot_tag=TAG,
+                cabinet_lots_hidden=True, issue_history=_issue_history(random.Random("T3-issues-%s" % seed), stock))
+
+
+def requests_task(seed):
+    """T4 (7 days): norepinephrine and epinephrine on allocation. Nurse managers ask for
+    extra stock; some requests reflect a real surge on the ward, others do not.
+    Moving scarce stock to a ward that does not need it leaves others short."""
+    rng = random.Random("T4-%s" % seed)
+    stock, lots = _initial_stock(rng)
+    for e in stock:
+        if e["drug"] in ("NOR-4MG", "EPI-1MG") and e["loc"] == W.CENTRAL:
+            e["qty"] = int(e["qty"] * T4_CENTRAL_STOCK)
+    t = sorted(rng.sample([3, 4, 5, 6, 7, 8, 9, 10], 6))
+    # Genuine requests come from wards where the product is in heavy use and a surge is under way;
+    # the others come from wards that rarely use it and want a reserve. The order is shuffled.
+    real = [("ICU", "NOR-4MG", "Nurse manager, ICU",
+             "We have three septic patients on norepinephrine infusions and are going through ampoules much faster "
+             "than usual. Please send %d extra."),
+            ("ED", "EPI-1MG", "Nurse manager, Emergency Department",
+             "Several anaphylaxis and arrest calls since yesterday; our epinephrine is going fast. Please send %d extra."),
+            ("ICU", "EPI-1MG", "Nurse manager, ICU",
+             "Epinephrine infusions running for two patients; usage is well above normal. Please send %d extra."),
+            ("ED", "NOR-4MG", "Nurse manager, Emergency Department",
+             "Several septic shock patients are waiting for ICU beds on norepinephrine. Please send %d extra.")]
+    reserve = [("SURG", "NOR-4MG", "Nurse manager, Surgical Wards",
+                "Please send %d extra norepinephrine so we are covered over the weekend; we are running low."),
+               ("PED", "EPI-1MG", "Nurse manager, Paediatrics",
+                "We are running low on epinephrine and would like a proper reserve, please send %d extra."),
+               ("MED", "EPI-1MG", "Nurse manager, Medical Wards",
+                "Could you send %d extra epinephrine to keep in the treatment room? We had a scare last month."),
+               ("SURG", "EPI-1MG", "Nurse manager, Surgical Wards",
+                "Please send %d extra epinephrine as soon as possible, we are nearly out.")]
+    specs = [(w, d, snd, txt, True) for (w, d, snd, txt) in rng.sample(real, 3)] + \
+            [(w, d, snd, txt, False) for (w, d, snd, txt) in rng.sample(reserve, 3)]
+    rng.shuffle(specs)
+    notices, surges = _routine_mail(rng, 14), []
+    notices.append(_brief("Norepinephrine and epinephrine are on national allocation this week. Make sure the "
+                          "patients who need them get them; stock sent to a ward that does not need it is stock "
+                          "another ward cannot use."))
+    notices.append(_mail("N-1401", 0, "Baltic Pharma Distribution - Customer Service",
+                         "Allocation notice: norepinephrine and epinephrine ampoules",
+                         "Norepinephrine 4 mg/4 mL and epinephrine 1 mg/mL ampoules are on national allocation. "
+                         "Standing orders are reduced to half of normal-use quantities until further notice. "
+                         "RapidRx Express can supply at most 6 ampoules of each per hospital per shift."))
+    for i, (ward, drug, sender, text, genuine) in enumerate(specs):
+        if genuine:
+            qty = int(W.usage(drug, ward) * (T4_SURGE - 1) * 3) + rng.randint(2, 6)
+            surges.append((drug, (ward,), t[i] - 2, t[i] + T4_SURGE_SHIFTS, T4_SURGE))
+        else:
+            qty = rng.randint(20, 30)
+        notices.append(_mail("N-14%02d" % (10 + i), t[i], sender,
+                             "Request: extra %s" % W.drug_name(drug).split(" ")[0].lower(), text % qty + "\n\n" + sender))
+    notices.sort(key=lambda n: (n["shift"], n["id"]))
+    return dict(name="T4-requests", seed=seed, shifts=14, stock=stock, notices=notices, surges=surges,
+                urgent_caps={"NOR-4MG": 6, "EPI-1MG": 6}, standing_share={"NOR-4MG": T4_STANDING, "EPI-1MG": T4_STANDING},
+                standing_orders=True, delivery_lot_tag=TAG, cabinet_lots_hidden=True,
+                issue_history=_issue_history(random.Random("T4-issues-%s" % seed), stock),
+                genuine_requests=[(sp[0], sp[1], t[i]) for i, sp in enumerate(specs) if sp[4]])
+
+
+# T1-T5 are the evaluation tasks; C1 is the control task with batches visible everywhere.
+TASKS = {"C1": recall_task, "T1": tracing_task, "T2": allergy_task, "T3": budget_task,
+         "T4": requests_task, "T5": fortnight_task}

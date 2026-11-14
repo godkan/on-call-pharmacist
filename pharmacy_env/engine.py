@@ -26,6 +26,8 @@ TOOL_MINUTES = {
     "get_issue_log": 5,
     "list_patients": 5,
     "inspect_cabinet": 15,
+    "revoke_substitution": 5,
+    "list_approvals": 5,
     "quarantine_lot": 10,
     "transfer_stock": 10,
     "approve_substitution": 10,
@@ -61,6 +63,13 @@ POLICIES = {
         "applies to one ward and one product and lets the ward cabinet issue the alternative when "
         "the original product is out of stock. Use get_drug_info to see approved alternatives."
     ),
+    "ward_requests": (
+        "SOP-PH-16 Ward requests for extra stock\n"
+        "Ward cabinets are restocked to par automatically. A request for stock above par should be "
+        "checked against the ward's recent usage and current cabinet stock before it is met: meet "
+        "requests that the data support, and do not move scarce stock to a ward that does not need it, "
+        "because it is then unavailable to other wards. Stock can be transferred back."
+    ),
     "urgent_order": (
         "SOP-PH-14 Urgent orders\n"
         "Urgent orders go to RapidRx Express, arrive at the central store at the start of the next "
@@ -69,6 +78,15 @@ POLICIES = {
     ),
 }
 
+
+POLICIES_V3_URGENT = (
+    "SOP-PH-14 Urgent orders\n"
+    "Urgent orders go to RapidRx Express, arrive at the central store at the start of the next "
+    "shift and cost list price plus 40%. During a national shortage RapidRx may limit the quantity "
+    "per product per shift (shown in get_drug_info). Urgent spending this rota is limited to the "
+    "budget shown in get_status; orders beyond it are refused. Order what is needed to bridge the "
+    "gap and keep budget for critical medicines."
+)
 
 POLICIES_V3 = {
     "recall": (
@@ -133,6 +151,9 @@ class Env:
         self.patients = task.get("patients", [])
         self.patient_drugs = set(task.get("patient_drugs", []))
         self.patient_subs = set()    # (patient_id, drug, alt)
+        self.urgent_caps = task.get("urgent_caps", {})      # product -> max units per shift
+        self.budget = task.get("urgent_budget")             # EUR for urgent orders, or None
+        self.ordered_this_shift = {}
         self.metrics = {
             "recalled_given": 0,          # units of recalled lots given after the notice
             "shortfall": {},              # (ward, drug) -> units not available
@@ -142,6 +163,8 @@ class Env:
             "missed_shifts": 0,
             "contraindicated_given": 0,   # doses of an alternative given to a patient allergic to it
         }
+        if "critical_weight" in task:
+            self.metrics["critical_weight"] = task["critical_weight"]
 
     # ---------- helpers ----------
     def now(self):
@@ -279,8 +302,9 @@ class Env:
                     continue
                 gap = W.central_par(drug) - self._qty(drug, W.CENTRAL)
                 if self.task.get("standing_orders"):
-                    # Fixed standing order sized for normal use; capped at par.
-                    gap = min(gap, W.DELIVERY_EVERY_SHIFTS * W.total_usage(drug))
+                    # Fixed standing order sized for normal use (scaled down under allocation); capped at par.
+                    share = self.task.get("standing_share", {}).get(drug, 1.0)
+                    gap = min(gap, int(W.DELIVERY_EVERY_SHIFTS * W.total_usage(drug) * share))
                 if gap > 0:
                     lot = "%s%s%02d" % (W.DRUGS[drug][4], self.task["delivery_lot_tag"], s)
                     self._add(lot, drug, W.CENTRAL, gap, "2028-03-31")
@@ -290,6 +314,7 @@ class Env:
         self._restock_cabinets()
         self.shift += 1
         self.minutes_left = SHIFT_MINUTES
+        self.ordered_this_shift = {}
         if self.shift >= self.n_shifts:
             self.done = True
             return
@@ -327,7 +352,9 @@ class Env:
         unread = [n for n in self.notices if n["shift"] <= self.shift and n["id"] not in self.read_ids]
         return {"hospital": W.HOSPITAL, "shift": self.shift_label(), "shift_number": self.shift + 1,
                 "shifts_in_rota": self.n_shifts, "minutes_left_this_shift": self.minutes_left,
-                "unread_notices": len(unread)}
+                "unread_notices": len(unread),
+                **({"urgent_order_budget_left_eur": round(self.budget - self.metrics["urgent_spend"], 2)}
+                   if self.budget is not None else {})}
 
     def t_read_notices(self, include_read=False):
         out = []
@@ -341,6 +368,8 @@ class Env:
     def t_read_policy(self, topic):
         if topic not in POLICIES:
             return {"error": "Unknown topic. Available: %s" % ", ".join(POLICIES)}
+        if topic == "urgent_order" and (self.urgent_caps or self.budget is not None):
+            return {"policy": POLICIES_V3_URGENT}
         if self.hidden_lots or self.patients:
             return {"policy": POLICIES_V3.get(topic, POLICIES[topic])}
         return {"policy": POLICIES[topic]}
@@ -359,6 +388,7 @@ class Env:
                                              % W.RESTRICTIONS[a] for a in W.ALTERNATIVES.get(d, [])
                                              if a in W.RESTRICTIONS},
                 "routine_supply": status, "central_par": W.central_par(d),
+                **({"urgent_order_limit_per_shift": self.urgent_caps[d]} if d in self.urgent_caps else {}),
                 "ward_par": {w: W.cabinet_par(d, w) for w in W.WARDS}}
 
     def t_list_inventory(self, location, product_code=None):
@@ -480,16 +510,39 @@ class Env:
         self.substitutions.add((ward, product_code, alternative_code))
         return {"ok": True, "scope": "all patients on %s" % ward}
 
+    def t_revoke_substitution(self, ward, product_code, alternative_code, patient_id=None):
+        key = (patient_id, product_code, alternative_code) if patient_id else (ward, product_code, alternative_code)
+        pool = self.patient_subs if patient_id else self.substitutions
+        if key not in pool:
+            return {"error": "No such approval is active."}
+        pool.discard(key)
+        return {"ok": True}
+
+    def t_list_approvals(self, ward=None):
+        return {"ward_level": [{"ward": w, "product_code": d, "alternative_code": a}
+                               for (w, d, a) in sorted(self.substitutions) if ward in (None, w)],
+                "patient_level": [{"patient_id": pid, "product_code": d, "alternative_code": a}
+                                  for (pid, d, a) in sorted(self.patient_subs)
+                                  if ward is None or any(p["id"] == pid and p["ward"] == ward for p in self.patients)]}
+
     def t_place_urgent_order(self, product_code, qty):
         if product_code not in W.DRUGS:
             return {"error": "Unknown product code."}
         qty = int(qty)
         if qty <= 0 or qty > 3 * W.central_par(product_code):
             return {"error": "Quantity must be between 1 and %d." % (3 * W.central_par(product_code))}
+        cap = self.urgent_caps.get(product_code)
+        if cap is not None and self.ordered_this_shift.get(product_code, 0) + qty > cap:
+            return {"error": "RapidRx allocation: at most %d units of %s per shift (%d already ordered "
+                             "this shift)." % (cap, product_code, self.ordered_this_shift.get(product_code, 0))}
+        cost = qty * W.price(product_code) * (1 + W.EMERGENCY_MARKUP)
+        if self.budget is not None and self.metrics["urgent_spend"] + cost > self.budget + 1e-9:
+            return {"error": "Urgent-order budget exceeded: EUR %.2f left, order costs EUR %.2f."
+                             % (self.budget - self.metrics["urgent_spend"], cost)}
+        self.ordered_this_shift[product_code] = self.ordered_this_shift.get(product_code, 0) + qty
         self.order_seq += 1
         lot = "RX%s%s%02d" % (W.DRUGS[product_code][4], self.task["delivery_lot_tag"], self.order_seq)
         self.pending_orders.append((self.shift + 1, product_code, qty, lot))
-        cost = qty * W.price(product_code) * (1 + W.EMERGENCY_MARKUP)
         self.metrics["urgent_spend"] += cost
         self.metrics["urgent_premium"] += qty * W.price(product_code) * W.EMERGENCY_MARKUP
         return {"ok": True, "order_ref": "RRX-%04d" % (self.order_seq + 4100),

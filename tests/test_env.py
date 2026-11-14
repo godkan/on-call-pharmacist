@@ -139,6 +139,33 @@ class TestTracingAndPatients(unittest.TestCase):
         self.assertEqual(self._run_shortage(per_patient), 0)
 
 
+class TestFiveTasks(unittest.TestCase):
+    def test_all_gates_pass(self):
+        from pharmacy_env.anchors import anchor_table
+        from pharmacy_env.eval import TASK_IDS, check_gates, SEEDS
+        for t in TASK_IDS:
+            fails, _ = check_gates(t, anchor_table(t, SEEDS))
+            self.assertEqual(fails, [], t)
+
+    def test_urgent_cap_and_budget(self):
+        env = Env(TASKS["T2"](0))
+        self.assertIn("error", env.call("place_urgent_order", {"product_code": "CTX-1G", "qty": 5}))
+        self.assertIn("ok", env.call("place_urgent_order", {"product_code": "CTX-1G", "qty": 4}))
+        self.assertIn("error", env.call("place_urgent_order", {"product_code": "CTX-1G", "qty": 1}))
+        env = Env(TASKS["T3"](0))
+        left = env.call("get_status")["urgent_order_budget_left_eur"]
+        self.assertIn("error", env.call("place_urgent_order", {"product_code": "PIP-45", "qty": 200}))
+        self.assertEqual(env.call("get_status")["urgent_order_budget_left_eur"], left)
+
+    def test_revoke_substitution(self):
+        env = Env(TASKS["T2"](0))
+        a = {"ward": "MED", "product_code": "CTX-1G", "alternative_code": "PIP-45"}
+        env.call("approve_substitution", a)
+        self.assertIn(("MED", "CTX-1G", "PIP-45"), env.substitutions)
+        self.assertIn("ok", env.call("revoke_substitution", a))
+        self.assertNotIn(("MED", "CTX-1G", "PIP-45"), env.substitutions)
+
+
 class TestClaudeHarness(unittest.TestCase):
     def test_claude_loop_with_scripted_client(self):
         """Feed the reference policy's calls through the Claude loop via a fake client."""

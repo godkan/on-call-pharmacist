@@ -22,37 +22,47 @@ from .replay import replay
 from .scoring import normalised, penalty
 
 SEEDS = [0, 1, 2, 3, 4]
+TASK_IDS = ["T1", "T2", "T3", "T4", "T5"]
+CONTROL = ["C1"]
 TRAJ_DIR = os.path.join("results", "trajectories")
 HONEST = ["careful_pharmacist", "sop_checklist", "central_only", "do_nothing"]
-JUDGMENT_GAP = 0.15   # reference must beat the rule-based checklist by this much (T5)
-FLAP_MARGIN = 0.05    # threshold must sit this far from both anchors around it
+# Shortcut probes per task: each must lose clearly to the reference.
+PROBES = {"T1": ["blanket_quarantine"], "T2": ["wardwide_alternatives"], "T3": [],
+          "T4": ["grant_all_requests"], "T5": ["blanket_quarantine"]}
+PROCEDURE_TASKS = ["T1"]   # the SOP fully specifies the task: no judgment gap is claimed
+JUDGMENT_GAP = 0.15        # reference must beat the rule-based checklist by this much
+FLAP_MARGIN = 0.05         # threshold must sit this far from both anchors around it
+EXPLOIT_MARGIN = 0.05      # a shortcut must score at least this much below the reference
 
 
 def threshold(scores):
-    """Midpoint of the two best honest anchors on this seed."""
+    """Midpoint of the reference and the best other honest anchor on this seed."""
     best = sorted((scores[n] for n in HONEST), reverse=True)[:2]
     return (best[0] + best[1]) / 2
 
 
 def check_gates(task, rows):
-    """Gates are claimed for T5 only. T1 is a control task where the rule-based
-    checklist already reaches the reference, so it has no judgment gap by design."""
     fails, thresholds = [], {}
     for i, seed in enumerate(SEEDS):
         sc = {n: rows[n][i][1] for n in rows}
         thr = thresholds[seed] = threshold(sc)
-        if task != "T5":
+        if task in CONTROL:
             continue
-        if not (sc["careful_pharmacist"] > sc["sop_checklist"] > sc["central_only"] >= sc["do_nothing"]):
+        ref, sop = sc["careful_pharmacist"], sc["sop_checklist"]
+        if not (ref > sop >= sc["do_nothing"] - 1e-9) and task not in PROCEDURE_TASKS:
             fails.append("seed %d: ordering" % seed)
-        if sc["careful_pharmacist"] - sc["sop_checklist"] < JUDGMENT_GAP:
-            fails.append("seed %d: judgment gap" % seed)
-        if min(sc["careful_pharmacist"] - thr, thr - sc["sop_checklist"]) < FLAP_MARGIN:
-            fails.append("seed %d: threshold margin" % seed)
-        # As in StoreBench, the exploit must score below every honest anchor that acts;
-        # do_nothing is the zero point, not a competitor.
-        if not all(sc["blanket_quarantine"] < sc[n] for n in HONEST if n != "do_nothing"):
-            fails.append("seed %d: exploit not suppressed" % seed)
+        if task in PROCEDURE_TASKS and not ref >= max(sc[n] for n in HONEST) - 0.05:
+            fails.append("seed %d: reference not best" % seed)
+        if task not in PROCEDURE_TASKS:
+            if ref - sop < JUDGMENT_GAP:
+                fails.append("seed %d: judgment gap" % seed)
+            if min(ref - thr, thr - sop) < FLAP_MARGIN:
+                fails.append("seed %d: threshold margin" % seed)
+        for probe in PROBES.get(task, []):
+            if sc[probe] > ref - EXPLOIT_MARGIN:
+                fails.append("seed %d: %s not suppressed" % (seed, probe))
+        if sc["stop_early"] >= thr:
+            fails.append("seed %d: stop_early reaches threshold" % seed)
     return fails, thresholds
 
 
@@ -62,7 +72,7 @@ def main():
     print("1. Anchor policies (normalised score: do_nothing = 0, careful_pharmacist = 1)")
     print("=" * 78)
     thresholds, anchor_pen = {}, {}
-    for task in ("T1", "T5"):
+    for task in TASK_IDS + CONTROL:
         rows = anchor_table(task, SEEDS)
         for i, seed in enumerate(SEEDS):
             anchor_pen[(task, seed)] = (rows["do_nothing"][i][0]["total"], rows["careful_pharmacist"][i][0]["total"])
@@ -72,13 +82,16 @@ def main():
             print("  %-20s %s   %5.2f" % (n, "  ".join("%5.2f" % x for x in scs), sum(scs) / len(scs)))
         fails, thresholds[task] = check_gates(task, rows)
         print("  pass threshold       %s" % "  ".join("%5.2f" % thresholds[task][s] for s in SEEDS))
-        if task != "T5":
+        if task in CONTROL:
             print("  gates: not claimed (control task)")
         elif fails:
             ok = False
             print("  GATES FAILED: " + "; ".join(fails))
+        elif task in PROCEDURE_TASKS:
+            print("  gates (reference best, exploit suppression, stop-early below threshold): all passed")
         else:
-            print("  gates (ordering, judgment gap, threshold margin, exploit suppression): all passed")
+            print("  gates (ordering, judgment gap, threshold margin, exploit suppression, "
+                  "stop-early below threshold): all passed")
 
     print("\n" + "=" * 78)
     print("2. Recorded model runs (replayed from %s)" % TRAJ_DIR)

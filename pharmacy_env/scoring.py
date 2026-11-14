@@ -20,7 +20,7 @@ WEIGHTS = {
 def penalty(m):
     short = 0.0
     for (ward, drug), units in m["shortfall"].items():
-        w = WEIGHTS["shortfall_critical"] if W.critical(drug) else WEIGHTS["shortfall_other"]
+        w = m.get("critical_weight", WEIGHTS["shortfall_critical"]) if W.critical(drug) else WEIGHTS["shortfall_other"]
         short += units * w * W.WARD_WEIGHT[ward]
     parts = {
         "recalled_given": m["recalled_given"] * WEIGHTS["recalled_given"],
