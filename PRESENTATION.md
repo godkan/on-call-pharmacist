@@ -20,7 +20,7 @@ Record the screen: the README on GitHub, then a terminal, then one trajectory fi
 > all 34 runs of the two incident tasks, every model let more recalled or temperature-damaged vials
 > reach patients than the reference did.
 
-**0:50-1:20 - Why it fails** (open `results/trajectories/T5_seed0_deepseek-4-1-flash_handover_run2.jsonl`, search for "NOT YET ACTIONED")
+**0:50-1:20 - Why it fails** (open `results/trajectories/T5_seed2_deepseek-4-1-flash_handover.jsonl`, search for "CLASS II RECALL NOT YET ACTIONED", shift 4)
 > The issue log already shows where a recalled batch went. The model instead inspects cabinets one
 > by one, runs out of desk time, and hands the recall over to the next shift - this note starts
 > "URGENT - CLASS II RECALL NOT YET ACTIONED". By then the wards have used the batch.
