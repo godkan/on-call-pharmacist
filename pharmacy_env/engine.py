@@ -407,9 +407,12 @@ class Env:
                              "Call end_shift to hand over." % (self.minutes_left, name, cost)}
         if name != "end_shift":
             self.attended.add(self.shift)
+        if not isinstance(args, dict):
+            return {"error": "Arguments for %s must be a JSON object." % name}
         try:
             result = getattr(self, "t_" + name)(**args)
-        except TypeError as ex:
+        except (TypeError, ValueError, KeyError, AttributeError) as ex:
+            # A malformed argument (wrong type, unknown key) is the caller's error, never a crash.
             return {"error": "Invalid arguments for %s: %s" % (name, ex)}
         if "error" not in result:
             self.minutes_left -= cost

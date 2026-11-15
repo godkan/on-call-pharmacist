@@ -341,7 +341,10 @@ every seed (mean score over five seeds; reference = 1.00):
 | Stop early | Remaining shifts are simulated and penalised; patients and wards keep using medicines (`stop_early` anchor) | T1 0.49, T2 0.02, T3 -0.12, T4 0.01, T5 0.26 |
 | Do nothing | Shortages, recalled and damaged units given (`do_nothing`) | 0.00 by definition |
 | Withdraw everything so nothing bad is given | Shortages and wrongly withdrawn units cost more (`blanket_quarantine`, `discard_all_cold`) | T1 0.50 / 0.84, T5 0.05 |
-| Visit every cabinet blindly | Each visit costs desk time even when the batch is gone | |
+| Withdraw the recalled batch blindly at every location (no tracing, nothing else) | Not an exploit: it does withdraw the batch, at the cost of desk time (a visit costs 10 minutes even if the batch is gone). Alone it misses the cold chain and every supply problem; added to the reference it is a legitimate, wasteful alternative to tracing (see below) | T1 0.81-1.00, T5 0.27-0.46, T2-T4 0.00 |
+| Park stock in the out-of-hours cupboard | Day shifts cannot use it | T1 0.42-0.75, T2-T5 -15.51 to -0.65 |
+| Push all central stock to the wards on the first shift | Nothing left to resupply from; shortages follow | 0.00-0.02 |
+| Take every free loan and do nothing else | 10 units per product per rota changes nothing | 0.00-0.03 |
 | Approve a restricted alternative ward-wide | Contraindicated doses cost 15 each (`wardwide_alternatives`) | T2 0.10 |
 | Grant every request | Scarce stock lands where it is not used (`grant_all_requests`) | T4 0.82 |
 | Buy your way out (hoard every critical product) | Purchase premiums are penalised; express supply is capped under allocation; loans are limited; T3 has a hard budget covering the courier and the second wholesaler. Hoarding uses up the caps, loans and budget before they are needed (`hoard_critical`) | T1 0.50, T2 -0.95, T3 0.17, T4 -0.35, T5 0.26 |
@@ -349,6 +352,13 @@ every seed (mean score over five seeds; reference = 1.00):
 | Store concentrated potassium on a ward | Refused by hospital policy |
 | Withdraw by product name instead of batch | Only named batches count as recalled; other withdrawn units are penalised |
 | Game timing or latency | Simulated time depends only on the action sequence |
+
+The last four rows, and the reference with a blind sweep added, are in `python3 -m pharmacy_env.exploits`
+(all tasks, seeds 0-4). The blind sweep is worth knowing about: on T1 seed 3, the procedure task, it
+alone matches the reference (1.00), and added to the reference it scores 1.10 there, because tracing
+through the issue log costs the reference time on that seed. On the other seeds and tasks the
+reference with a sweep scores 0.91-1.00. None of the models used a sweep; they inspected cabinets
+one by one instead (failure mode 1). Malformed or unknown arguments return an error and cost no time.
 
 Determinism: demand comes from an RNG keyed only by seed, shift, ward and product; patients and
 events are fixed per seed; all iteration orders are fixed. A test runs the anchors under three
@@ -393,13 +403,20 @@ Python 3.9+; the environment and the evaluation use the standard library only.
 
 ```bash
 python3 -m pharmacy_env.eval                         # everything above (about a minute)
-python3 -m unittest discover tests                   # 24 tests (about a minute)
+python3 -m unittest discover tests                   # 27 tests (about a minute and a half)
 python3 -m pharmacy_env.anchors --task T5 --seeds 0 1 2 3 4
 python3 -m pharmacy_env.replay results/trajectories/T5_seed0_deepseek-4-1-flash_handover.jsonl
 python3 -m pharmacy_env.analyze results/trajectories/*.jsonl
 python3 -m pharmacy_env.figure results/eval_output.txt results/scores.svg   # the figure above
 python3 -m pharmacy_env.sensitivity                  # penalty weights x0.25 and x4
+python3 -m pharmacy_env.exploits                     # further shortcut attempts, all tasks and seeds
+python3 -m pharmacy_env.judge --task T1 --seed 0     # reference, do-nothing, stop-early for one seed
 ```
+
+Judges rerunning the evaluation with their own harness: see [JUDGES.md](JUDGES.md). Besides
+`run_agent` and `run_claude`, the environment can be driven through a Python reset/step interface
+(`pharmacy_env/gym_env.py`) or as an MCP server over stdio (`pharmacy_env/mcp_server.py`); all three
+write trajectories that `pharmacy_env.judge` replays and scores.
 
 Run a model (costs API credits). Put keys in `api.env` (git-ignored):
 
@@ -429,6 +446,11 @@ token usage, endpoint and settings.
 | `pharmacy_env/analyze.py` | Tags failure modes in a trajectory |
 | `pharmacy_env/figure.py` | Draws `results/scores.svg` from the evaluation output |
 | `pharmacy_env/sensitivity.py` | Recounts runs below the reference with each penalty weight scaled |
+| `pharmacy_env/exploits.py` | Further shortcut attempts beyond the gated probes |
+| `pharmacy_env/judge.py` | Reference, do-nothing and stop-early runs for one seed; scores agent trajectories |
+| `pharmacy_env/gym_env.py` | Python reset/step interface for any agent harness |
+| `pharmacy_env/mcp_server.py` | MCP server (stdio) exposing the 22 functions |
+| `JUDGES.md` | How to rerun the evaluation with your own harness |
 | `pharmacy_env/run_agent.py` | Agent harness for OpenAI-compatible APIs |
 | `pharmacy_env/run_claude.py` | Agent harness for Claude (Anthropic SDK) |
 | `results/trajectories/` | The 121 model runs reported above (35 DeepSeek, 25 DeepSeek with reasoning high, 6 DeepSeek with the hint, 25 Kimi, 15 Qwen3-4B base, 15 Qwen3-4B fine-tuned) |
@@ -502,8 +524,9 @@ Choices a pharmacist reviewing the world might question, and why we made them:
 - **Same-seed variation.** Repeated runs on one seed vary (DeepSeek T3 0.63-0.94, Kimi T1 0.64-0.95), even at temperature 0; the
   reference is fully deterministic.
 - **The reference is not optimal.** It is the strongest script we wrote; T1 events are dense enough
-  that it lets 1-14 recalled or damaged units through, Kimi beats its purchasing on T3 seed 2 and
-  T4 seed 1, and DeepSeek with reasoning beats its T2 substitutions on seed 4. We have not changed
+  that it lets 1-14 recalled or damaged units through, a blind recall sweep added to it does better
+  on T1 seed 3, Kimi beats its purchasing on T3 seed 2 and T4 seed 1, and DeepSeek with reasoning
+  beats its T2 substitutions on seed 4. We have not changed
   the reference after these runs.
 - **Synthetic data.** Demand, prices, par levels, patient mix and the cold-chain table are invented.
 - **Post-training is behaviour cloning only.** The 4B model imitates the scripted reference; it

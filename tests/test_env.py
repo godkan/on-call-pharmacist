@@ -277,5 +277,60 @@ class TestClaudeHarness(unittest.TestCase):
         self.assertAlmostEqual(got, want)
 
 
+class TestJudgeInterfaces(unittest.TestCase):
+    """The interfaces judges may plug their own harness into: Python reset/step and MCP over stdio."""
+
+    def test_reference_through_python_api_scores_one_and_replays(self):
+        from pharmacy_env.gym_env import PharmacyEnv
+        path = os.path.join(tempfile.mkdtemp(), "g.jsonl")
+        gym = PharmacyEnv("T1", seed=1, trajectory_path=path)
+        gym.reset()
+
+        class Adapter:          # lets the reference policy act through step()
+            def __getattr__(self, k):
+                return getattr(gym.env, k)
+
+            def call(self, name, args=None):
+                obs, reward, done, _, info = gym.step({"name": name, "arguments": args or {}})
+                return info["function_result"] if info.get("new_shift") else json.loads(obs)
+
+        careful_pharmacist(Adapter())
+        s = gym.close()
+        self.assertAlmostEqual(s["score"], 1.0)
+        got, want = replay(path)
+        self.assertAlmostEqual(got, want)
+
+    def test_mcp_server_round_trip(self):
+        import io
+        from pharmacy_env import mcp_server
+        path = os.path.join(tempfile.mkdtemp(), "m.jsonl")
+        reqs = [{"jsonrpc": "2.0", "id": 1, "method": "initialize", "params": {"protocolVersion": "2025-06-18"}},
+                {"jsonrpc": "2.0", "method": "notifications/initialized"},
+                {"jsonrpc": "2.0", "id": 2, "method": "tools/list"},
+                {"jsonrpc": "2.0", "id": 3, "method": "tools/call",
+                 "params": {"name": "place_urgent_order", "arguments": {"product_code": "EPI-1MG", "qty": "x"}}},
+                {"jsonrpc": "2.0", "id": 4, "method": "tools/call", "params": {"name": "end_shift", "arguments": {}}}]
+        out = io.StringIO()
+        mcp_server.serve(mcp_server.Server("T2", 0, path), io.StringIO("\n".join(map(json.dumps, reqs)) + "\n"), out)
+        replies = {r["id"]: r for r in map(json.loads, out.getvalue().splitlines())}
+        self.assertEqual(sorted(replies), [1, 2, 3, 4])
+        self.assertEqual(len(replies[2]["result"]["tools"]), len(run_agent.TOOLS))
+        self.assertTrue(replies[3]["result"]["isError"])
+        self.assertIn("shift 2 of", replies[4]["result"]["content"][0]["text"])
+        got, want = replay(path)
+        self.assertAlmostEqual(got, want)
+
+    def test_malformed_arguments_never_crash(self):
+        env = Env(TASKS["T5"](0))
+        bad = [("place_urgent_order", {"product_code": "EPI-1MG", "qty": "lots"}),
+               ("transfer_stock", {"product_code": "EPI-1MG", "from_location": "CENTRAL", "to_location": "ICU",
+                                   "qty": None}),
+               ("quarantine_lot", {"lot": None, "location": "ICU"}), ("get_issue_log", ["ICU"]),
+               ("approve_substitution", {"ward": 3, "product_code": [], "alternative_code": {}}),
+               ("list_inventory", {"location": "CENTRAL", "unexpected": 1}), ("no_such_function", {})]
+        for name, args in bad:
+            self.assertIn("error", env.call(name, args), name)
+
+
 if __name__ == "__main__":
     unittest.main()
