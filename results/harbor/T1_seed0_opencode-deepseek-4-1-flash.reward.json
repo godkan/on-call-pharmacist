@@ -1,0 +1,12 @@
+{
+ "reward": 0.7410839470757925,
+ "score": 0.7410839470757925,
+ "pass_threshold": 1.0,
+ "passed": 0.0,
+ "penalty": 402.164,
+ "reference_penalty": 119.4024,
+ "recalled_units_given": 25.0,
+ "damaged_units_given": 8.0,
+ "contraindicated_doses": 0.0,
+ "stopped_early": 0.0
+}

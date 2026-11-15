@@ -418,7 +418,10 @@ python3 -m pharmacy_env.judge --task T1 --seed 0     # reference, do-nothing, st
 format for the OpenCode harness: the hospital system runs as an MCP sidecar (streamable HTTP), the
 verifier replays the agent's actions on a fresh world and writes `/logs/verifier/reward.json`, and
 the oracle is the reference pharmacist (`PHARMACY_POLICY=do_nothing` or `stop_early` for the two
-baselines). Other seeds: `python3 harbor/make_tasks.py --tasks T1 --seeds 3`. See [harbor/README.md](harbor/README.md).
+baselines). Checked with Harbor 0.26.0: the oracle scores 1.000 on all five tasks, and an OpenCode run
+with DeepSeek V4.1 Flash on T1 completed all 10 shifts through the MCP sidecar and scored 0.74,
+with 25 recalled and 8 damaged units reaching patients (`results/harbor/`). Other seeds:
+`python3 harbor/make_tasks.py --tasks T1 --seeds 3`. See [harbor/README.md](harbor/README.md).
 
 Judges rerunning the evaluation with their own harness: see [JUDGES.md](JUDGES.md). Besides
 `run_agent` and `run_claude`, the environment can be driven through a Python reset/step interface
@@ -459,6 +462,7 @@ token usage, endpoint and settings.
 | `pharmacy_env/mcp_server.py` | MCP server (stdio) exposing the 22 functions |
 | `JUDGES.md` | How to rerun the evaluation with your own harness |
 | `harbor/` | Harbor tasks (T1-T5, seed 0), their generator, verifier and oracle |
+| `results/harbor/` | An end-to-end Harbor run (OpenCode, DeepSeek V4.1 Flash, T1 seed 0) with its reward file |
 | `pharmacy_env/run_agent.py` | Agent harness for OpenAI-compatible APIs |
 | `pharmacy_env/run_claude.py` | Agent harness for Claude (Anthropic SDK) |
 | `results/trajectories/` | The 121 model runs reported above (35 DeepSeek, 25 DeepSeek with reasoning high, 6 DeepSeek with the hint, 25 Kimi, 15 Qwen3-4B base, 15 Qwen3-4B fine-tuned) |

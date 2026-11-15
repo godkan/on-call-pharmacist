@@ -57,6 +57,20 @@ scores 1.000 on all five tasks with no errors, the same as `python3 -m pharmacy_
 `PHARMACY_POLICY` set, T1 gives do-nothing 0.000 and stop-early -0.037. Harbor's `nop` agent scores
 -0.046 on T1: it does not even attend the shifts, which the do-nothing baseline does.
 
+**An agent run end to end.** OpenCode with DeepSeek V4.1 Flash on `t1-seed0` (Harbor 0.26.0, no
+errors): the agent reached the 22 functions through the MCP sidecar, worked all 10 shifts in 159
+calls, and scored 0.74 (pass threshold 1.00); 25 recalled and 8 temperature-damaged units reached
+patients, the same failure pattern as in our own harness (README, failure modes 1 and 2). The run
+is saved in `results/harbor/` and replays exactly with `pharmacy_env.judge`.
+
+For an OpenAI-compatible endpoint, give the model a provider name of your own so OpenCode uses the
+chat-completions API (its built-in `openai` provider calls the Responses API):
+
+```bash
+harbor run -p harbor/tasks/t1-seed0 -a opencode -m myprovider/<model> \
+  --base-url https://.../v1 --api-key-name MY_API_KEY --api-format openai_chat_completions
+```
+
 ## Other seeds
 
 ```bash
