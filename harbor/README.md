@@ -40,6 +40,8 @@ neither read the world nor see its score.
 | `recalled_units_given`, `damaged_units_given`, `contraindicated_doses` | patient-safety counts |
 | `stopped_early` | 1 if the agent ended before the rota did (remaining shifts run unattended) |
 
+`/logs/verifier/reward.txt` holds `reward` alone, for tools that read a single number.
+
 `/logs/verifier/trajectory.jsonl` is the run in the repository's trajectory format:
 `python3 -m pharmacy_env.judge --task T1 --seed 0 --trajectory <it>` replays and scores it again.
 
@@ -65,15 +67,18 @@ agent can reach any provider.
 ## Runs a judge needs
 
 ```bash
-harbor run -p harbor/tasks/t1-seed0 -a oracle                       # reference: score 1.00
-# do-nothing (0.00) and stop-early baselines: set the oracle's policy in task.toml,
-#   [solution] env = { PHARMACY_POLICY = "do_nothing" }   (or "stop_early")
-harbor run -p harbor/tasks/t1-seed0 -a opencode -m <provider/model>  # an agent run
+harbor run -p harbor/tasks/t1-seed0 -a oracle                        # reference run: score 1.00
+bash harbor/run_baseline.sh t1-seed0 do_nothing                      # do-nothing baseline: 0.00
+bash harbor/run_baseline.sh t1-seed0 stop_early                      # stop-early baseline: -0.04
+harbor run -p harbor/tasks/t1-seed0 -a opencode -m <provider/model>  # an agent run (see Models)
 ```
+
+`run_baseline.sh` runs the oracle on a temporary copy of the task with `[solution] env
+PHARMACY_POLICY` set to the given policy, so the task itself stays unchanged.
 
 Checked with Harbor 0.26.0 and local Docker (`harbor run -p harbor/tasks -a oracle`): the oracle
 scores 1.000 on all five tasks with no errors, the same as `python3 -m pharmacy_env.judge`. With
-`PHARMACY_POLICY` set, T1 gives do-nothing 0.000 and stop-early -0.037. Harbor's `nop` agent scores
+`run_baseline.sh`, T1 gives do-nothing 0.000 and stop-early -0.037. Harbor's `nop` agent scores
 -0.046 on T1: it does not even attend the shifts, which the do-nothing baseline does.
 
 **An agent run end to end.** OpenCode with DeepSeek V4.1 Flash on `t1-seed0` (Harbor 0.26.0, no

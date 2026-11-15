@@ -66,6 +66,16 @@ time and incomplete memory across shifts. Every decision has a checkable outcome
 or temperature-damaged vial given to a patient, did an allergic patient receive a contraindicated
 drug, did a ward run out of a critical medicine), so the reward is computed, never judged.
 
+What an agent has to get right, against the challenge's starting points:
+
+| Starting point | Where the environment asks for it |
+|---|---|
+| Planning several steps ahead | Buying before an announced surge (T3) or allocation (T5) rather than after wards run out; bridging a supply suspension to its resume date (T2) |
+| Exploring an unfamiliar system | Cabinets do not record batches: the agent has to find that the issue log, batch records and temperature logs answer where a batch is and whether it failed |
+| Using tools | 22 functions with different costs: tracing through the 5-minute issue log instead of 15-minute on-site inspections; per-patient rather than ward-wide approvals |
+| Managing limited resources | 120 minutes of desk time per shift, a EUR 1,800 budget (T3), courier caps and national allocation, 10-unit loans, scarce stock that wards compete for (T4) |
+| Adapting when new information arrives | Recalls, refrigerator alarms, allocation notices and ward requests arrive mid-rota; across shifts the agent keeps only its own handover note |
+
 ## The world
 
 | Part | What it contains |

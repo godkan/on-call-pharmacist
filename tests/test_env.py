@@ -357,6 +357,8 @@ class TestJudgeInterfaces(unittest.TestCase):
             reward = json.load(f)
         self.assertAlmostEqual(reward["score"], 1.0)
         self.assertEqual(reward["passed"], 1.0)
+        with open(os.path.join(tmp, "logs", "reward.txt")) as f:
+            self.assertAlmostEqual(float(f.read()), 1.0)
         got, want = replay(os.path.join(tmp, "logs", "trajectory.jsonl"))
         self.assertAlmostEqual(got, want)
 

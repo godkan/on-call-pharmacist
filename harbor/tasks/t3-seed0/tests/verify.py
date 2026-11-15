@@ -2,7 +2,8 @@
 
 Fetches the actions the agent took from the hospital-system sidecar, replays them on a fresh copy of
 the world (the remaining shifts run unattended if the agent stopped early), scores the run against
-the reference and do-nothing runs for the same seed, and writes /logs/verifier/reward.json and
+the reference and do-nothing runs for the same seed, and writes /logs/verifier/reward.json (all
+metrics), /logs/verifier/reward.txt (the reward alone; Harbor reads the JSON when both exist) and
 the replayable trajectory /logs/verifier/trajectory.jsonl.
 """
 import json
@@ -81,6 +82,8 @@ def main():
     }
     with open(os.path.join(OUT, "reward.json"), "w") as f:
         json.dump(reward, f, indent=1)
+    with open(os.path.join(OUT, "reward.txt"), "w") as f:   # single-number form for any scoring skeleton
+        f.write("%.6f\n" % reward["reward"])
     print("%s seed %d: %d function calls, penalty %.1f (reference %.1f), score %.3f, threshold %.3f%s"
           % (task, seed, calls, pen["total"], p_ref, score, thr, ", stopped early" if stopped_early else ""))
     print(json.dumps(reward))

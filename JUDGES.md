@@ -11,6 +11,8 @@ pharmacist. Details, reward keys and the baseline switch: [harbor/README.md](har
 
 ```bash
 harbor run -p harbor/tasks/t1-seed0 -a oracle                        # reference, score 1.00
+bash harbor/run_baseline.sh t1-seed0 do_nothing                       # do-nothing baseline, 0.00
+bash harbor/run_baseline.sh t1-seed0 stop_early                       # stop-early baseline, -0.04
 harbor run -p harbor/tasks/t1-seed0 -a opencode -m <provider/model>   # agent run
 ```
 
