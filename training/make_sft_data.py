@@ -1,6 +1,6 @@
 """Turn reference-pharmacist runs into chat transcripts for supervised fine-tuning.
 
-    python3 -m training.make_sft_data --seeds 5-16 --out training/data/sft.jsonl
+    python3 -m training.make_sft_data --seeds 5-24 --out training/data/sft.jsonl
 
 Each line is one shift in handover mode, in the same format the agent harness
 (pharmacy_env/run_agent.py, --memory handover) sends to a model: the system prompt,
@@ -96,7 +96,7 @@ def parse_seeds(text):
 def main():
     ap = argparse.ArgumentParser()
     ap.add_argument("--tasks", nargs="+", default=["T1", "T2", "T3", "T4", "T5"])
-    ap.add_argument("--seeds", default="5-16")
+    ap.add_argument("--seeds", default="5-24")
     ap.add_argument("--out", default="training/data/sft.jsonl")
     a = ap.parse_args()
     os.makedirs(os.path.dirname(a.out), exist_ok=True)

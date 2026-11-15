@@ -36,8 +36,8 @@ scripted reference pharmacist on the same seed: 4-89 units per run against 1-14.
   cold-chain damage exactly as it was, and no hinted run passes (see
   [Hint ablation](#hint-ablation)).
 - **Kimi K3.1 Pro** is a stronger comparison model. It fails the safety and patient-level tasks
-  (T1, T2, mostly T5) like DeepSeek, but solves the supply-planning tasks T3 and T4, once beating
-  the reference on each. We report this rather than retune the reference after the fact.
+  (T1, T2, mostly T5) like DeepSeek, but passes the supply-planning tasks T3 and T4 in 8 of 10
+  runs, once beating the reference on each. We report this rather than retune the reference after the fact.
 - **Post-training (bonus).** A Qwen3-4B fine-tuned with LoRA on reference transcripts from
   training seeds rises from a mean of 0.12 to 0.78 on the evaluation seeds and solves T3 and T4,
   but still lets recalled and damaged units reach patients in every T1 and T5 run (see
@@ -153,7 +153,7 @@ log, never from hidden state.
 
 Means over five seeds. **Pass threshold** per seed is the midpoint of the reference and the best
 other honest anchor (reference, reactive, SOP checklist, central-only, do-nothing): T1 0.99-1.01,
-T2 0.77-0.83, T3 0.50-0.83, T4 0.71-0.79, T5 0.86-0.93. The evaluation checks these gates on
+T2 0.77-0.83, T3 0.50-0.83, T4 0.71-0.79, T5 0.86-0.92. The evaluation checks these gates on
 every seed of T1-T5, and all pass:
 
 1. Ordering: reference > SOP checklist >= do-nothing (T1: the reference is within 0.05 of the best honest anchor).
@@ -220,7 +220,7 @@ high (`LLM_REASONING_EFFORT=high`; 25 runs). Score / pass threshold:
 
 24 of 25 runs are below the reference and 19 below the threshold. Reasoning helps most on T2, where
 the work is patient-by-patient bookkeeping: it passes on three seeds and on seed 4 beats the
-reference (1.16), approving alternatives per patient more completely than the script. It is also
+reference (1.16), leaving fewer ceftriaxone doses short than the script (22 against 33). It is also
 less careful there: in four of five T2 runs it approved the restricted piperacillin/tazobactam for
 whole wards as well, and in two of them 4 and 6 doses reached penicillin-allergic patients. It does
 not fix the safety incidents: in every T1 and T5 run recalled or damaged units still reached
@@ -272,8 +272,8 @@ ablation).
 
 **3. Under-supplies a confirmed need (T2, T4).** In T2 ceftriaxone patients go without doses
 (50-130 per run against 26-44 for the reference) because the model approves too few alternatives
-(0-12 approvals per run). In six of seven runs it approved piperacillin/tazobactam only per patient;
-in the seventh it also approved it ward-wide on four wards, and two doses reached
+(0-12 approvals per run). In six of seven runs it never approved piperacillin/tazobactam
+ward-wide; in the seventh it approved it ward-wide on four wards, and two doses reached
 penicillin-allergic patients. In T4 it correctly refuses all reserve requests, but sends too
 little, or nothing, to the wards in a genuine surge: 42-263 norepinephrine and 59-224 epinephrine
 doses could not be issued per run.
@@ -297,8 +297,8 @@ units reached patients). In every run it left frozen stock that had already move
 
 **What DeepSeek gets right.** Apart from that one T3 run it never quarantines usable stock; it
 ignores distractor mail including a recall for a presentation the hospital does not stock, refuses
-every reserve request in T4, and with reasoning off approves the restricted alternative only
-patient by patient in six of seven T2 runs.
+every reserve request in T4, and with reasoning off never approves the restricted alternative
+ward-wide in six of seven T2 runs.
 
 All failures come from decisions, not missing information: the issue log, temperature logs, batch
 records, patient lists, usage reports, notices and SOPs are available through the functions, and
@@ -318,8 +318,9 @@ environment or the harness:
   ordinary business refusals (unknown policy topic, budget exhausted, the neighbouring hospital is
   also on allocation, minimum order value); two calls had a missing argument.
 - **The information was available.** The reference uses only the same functions, desk time and
-  handover notes, and the hint ablation shows the recall failure responds to advice about using it; the failure tagger (`pharmacy_env/analyze.py`) cites the shift and location of
-  each failure so it can be checked in the trajectory.
+  handover notes, and the hint ablation shows the recall failure responds to advice about using
+  it; the failure tagger (`pharmacy_env/analyze.py`) cites the shift and location of each failure
+  so it can be checked in the trajectory.
 - **Runs are reproducible.** Every trajectory is replayed by the evaluation and reproduces its
   recorded penalty exactly.
 
