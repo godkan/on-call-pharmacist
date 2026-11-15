@@ -14,6 +14,10 @@ harbor run -p harbor/tasks/t1-seed0 -a oracle                        # reference
 harbor run -p harbor/tasks/t1-seed0 -a opencode -m <provider/model>   # agent run
 ```
 
+Models: any OpenCode-supported model works. Our reported numbers come from DeepSeek V4.1 Flash (model
+under test) and Kimi K3.1 Pro (stronger comparison), both through Verda's OpenAI-compatible endpoint;
+the exact Harbor command for them is in [harbor/README.md](harbor/README.md#models).
+
 The commands below do the same without Docker.
 
 ## 1. Reference, do-nothing and stop-early runs

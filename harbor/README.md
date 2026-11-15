@@ -43,6 +43,25 @@ neither read the world nor see its score.
 `/logs/verifier/trajectory.jsonl` is the run in the repository's trajectory format:
 `python3 -m pharmacy_env.judge --task T1 --seed 0 --trajectory <it>` replays and scores it again.
 
+## Models
+
+Any model OpenCode supports can run these tasks. The models we evaluated (README, Results), and so
+the ones our reported numbers are comparable with:
+
+| Role | Model | Endpoint used |
+|---|---|---|
+| Model under test | DeepSeek V4.1 Flash (`deepseek-4-1-flash-1017`) | Verda inference, OpenAI-compatible |
+| Stronger comparison model | Kimi K3.1 Pro (`kimi-k3-1-pro`) | Verda inference, OpenAI-compatible |
+
+```bash
+harbor run -p harbor/tasks/t1-seed0 -a opencode -m verda/deepseek-4-1-flash-1017 \
+  --base-url https://inference.verda.com/v1 --api-key-name VERDA_API_KEY --api-format openai_chat_completions
+```
+
+With other providers, use OpenCode's usual `provider/model` names (for example an Anthropic or
+OpenAI model with its API key in the environment). The tasks allow outbound network access, so the
+agent can reach any provider.
+
 ## Runs a judge needs
 
 ```bash
