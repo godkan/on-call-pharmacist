@@ -34,7 +34,7 @@ Break the Agent (AfterQuery)
 
 What it gets right: it ignores distractor mail and finds the cheaper supply channels in T3, the one task it passes with reasoning off (3 of 7 runs).
 
-**Reproduce (no API key, standard library only):** `python3 -m pharmacy_env.eval` re-runs all anchors and gates, replays every trajectory and prints the summary and failure modes. To rerun with your own harness (Python reset/step or MCP), see JUDGES.md.
+**Reproduce (no API key, standard library only):** `python3 -m pharmacy_env.eval` re-runs all anchors and gates, replays every trajectory and prints the summary and failure modes. Harbor tasks for the OpenCode harness are in harbor/ (oracle = reference, 1.00 on all five); other harnesses: JUDGES.md.
 
 **Credits.** Anchor calibration, gates and the reward-hack catalogue follow StoreBench (arXiv 2610.10942); domain, world, tasks and code are ours. Model runs used Verda's inference API.
 
