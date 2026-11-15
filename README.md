@@ -133,6 +133,11 @@ Penalty points, all computed from the simulation:
 The score normalises the penalty per seed: `score = (P_do_nothing - P) / (P_do_nothing - P_reference)`,
 so doing nothing scores 0 and the reference pharmacist scores 1.
 
+**The weights do not decide the result.** Scaling any single weight by 0.25 or by 4 and
+recomputing every run and the reference leaves DeepSeek below the reference in 57-59 of its 60 runs
+(59 with the weights above) and Kimi in 23 of 25 in every case
+(`python3 -m pharmacy_env.sensitivity`, `python3 -m pharmacy_env.sensitivity kimi`).
+
 ## Anchors and calibration
 
 Following the anchor-policy method of StoreBench (Raghuvanshi, Vedere, Wang, arXiv 2610.10942),
@@ -267,8 +272,10 @@ time)" and lists every location and quantity it had confirmed during the shift.
 **2. Does not follow a failed batch after it has moved (T1).** After the central refrigerator
 freezes, handover restocking has already sent frozen insulin and suxamethonium to the wards. The
 model withdraws stock in the central refrigerator but not the units now in ward cabinets: 1-13
-damaged units reached patients per run. A hint that says so does not change this (see the hint
-ablation).
+damaged units reached patients per run. The cold-chain SOP the model can read says this in so many
+words ("Stock of a failed batch that has been moved on from that refrigerator since the excursion
+began (see get_issue_log) is affected too and must be withdrawn where it now is"), and a hint that
+repeats it does not change the outcome (see the hint ablation).
 
 **3. Under-supplies a confirmed need (T2, T4).** In T2 ceftriaxone patients go without doses
 (50-130 per run against 26-44 for the reference) because the model approves too few alternatives
@@ -391,6 +398,7 @@ python3 -m pharmacy_env.anchors --task T5 --seeds 0 1 2 3 4
 python3 -m pharmacy_env.replay results/trajectories/T5_seed0_deepseek-4-1-flash_handover.jsonl
 python3 -m pharmacy_env.analyze results/trajectories/*.jsonl
 python3 -m pharmacy_env.figure results/eval_output.txt results/scores.svg   # the figure above
+python3 -m pharmacy_env.sensitivity                  # penalty weights x0.25 and x4
 ```
 
 Run a model (costs API credits). Put keys in `api.env` (git-ignored):
@@ -420,6 +428,7 @@ token usage, endpoint and settings.
 | `pharmacy_env/replay.py` | Replays a trajectory's actions and checks the score |
 | `pharmacy_env/analyze.py` | Tags failure modes in a trajectory |
 | `pharmacy_env/figure.py` | Draws `results/scores.svg` from the evaluation output |
+| `pharmacy_env/sensitivity.py` | Recounts runs below the reference with each penalty weight scaled |
 | `pharmacy_env/run_agent.py` | Agent harness for OpenAI-compatible APIs |
 | `pharmacy_env/run_claude.py` | Agent harness for Claude (Anthropic SDK) |
 | `results/trajectories/` | The 121 model runs reported above (35 DeepSeek, 25 DeepSeek with reasoning high, 6 DeepSeek with the hint, 25 Kimi, 15 Qwen3-4B base, 15 Qwen3-4B fine-tuned) |
@@ -449,6 +458,36 @@ should be read.
 
 Earlier versions are tagged and committed in git: v1 (10 products, Gemini 3.5 Flash below the
 threshold on a two-week task), v3 (batch tracing and allergies), v4 (five tasks), v5 (cold chain).
+
+## Design choices and simplifications
+
+Choices a pharmacist reviewing the world might question, and why we made them:
+
+- **Handover notes only.** Each shift sees the previous shift's free-text note, not every earlier
+  note. The hospital's records are all still available through the functions (issue log, every
+  notice including read ones, batch records, temperature logs, usage reports, approvals,
+  inventory), so what is lost is only what the agent chose not to write down. This tests
+  continuity over a 28-shift rota and keeps the context bounded (a 4B model overflowed 32k tokens
+  in one shift). The main failure modes 1-3 happen within a single shift; only one documented
+  failure (T3 seed 4, the courier batch taken for "not ours") comes from lost context. The harness
+  also has `--memory full`, which keeps the whole conversation.
+- **120 minutes of desk time and fixed function costs.** They stand for the part of a shift the
+  on-call pharmacist has for supply and safety work. Every function description states its cost
+  and every result reports the minutes left; the reference completes the same work within the same
+  budget, and the hint ablation shows the model doing better within it.
+- **Invented stability rules.** The cold-chain table is synthetic. In particular, the world says
+  "freezing does not affect" rocuronium so that a freeze affects some products and not others;
+  real rocuronium labelling says not to freeze it. The agent is told the rule in-world
+  (`get_drug_info`), and no reported failure depends on rocuronium.
+- **The pharmacist is the last safeguard.** Nurses give an approved alternative without a separate
+  electronic allergy check, so a ward-wide approval of piperacillin/tazobactam reaches
+  penicillin-allergic patients; in a real hospital prescribing systems add further checks.
+- **One pharmacist, no clinicians to consult.** Wards do not borrow from each other on their own
+  (the agent can move stock between locations, concentrated potassium only where policy allows), and substitutions are approved by the
+  pharmacist under the formulary policy rather than discussed with prescribers.
+- **Shortages are counted, not simulated clinically.** A dose a ward cannot issue is a penalty;
+  the simulation does not model what then happens to the patient. Demand is Poisson per ward and
+  product; only ceftriaxone is prescribed per patient.
 
 ## Limitations
 
