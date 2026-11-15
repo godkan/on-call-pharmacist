@@ -1,0 +1,33 @@
+schema_version = "1.4"
+
+[task]
+name = "on-call-pharmacist/t5-seed0"
+authors = [{ name = "On-Call Pharmacist team" }]
+description = "On-Call Pharmacist T5 (two-week rota), seed 0: run a hospital's medicines service for 28 shifts."
+keywords = ["healthcare", "pharmacy", "medication-safety", "long-horizon", "mcp"]
+
+[metadata]
+category = "operations"
+task_id = "T5"
+seed = 0
+shifts = 28
+difficulty_explanation = "Recalls must be traced through the issue log, failed cold-chain batches followed to the wards, restricted alternatives approved per patient, and shortages planned ahead, within 120 minutes of desk time per shift."
+
+[verifier]
+timeout_sec = 600.0
+
+[agent]
+timeout_sec = 5040.0
+
+[solution]
+env = { PHARMACY_POLICY = "careful_pharmacist" }
+
+[environment]
+build_timeout_sec = 900.0
+cpus = 1
+memory_mb = 2048
+
+[[environment.mcp_servers]]
+name = "pharmacy"
+transport = "streamable-http"
+url = "http://mcp-server:8000/mcp"

@@ -157,7 +157,8 @@ log, never from hidden state.
 | `hoard_critical` (probe) | Reference, plus buys the most the channels allow of every critical product before each handover | 0.50 | -0.95 | 0.17 | -0.35 | 0.26 |
 
 Means over five seeds. **Pass threshold** per seed is the midpoint of the reference and the best
-other honest anchor (reference, reactive, SOP checklist, central-only, do-nothing): T1 0.99-1.01,
+other honest anchor (reference, reactive, SOP checklist, central-only, do-nothing), never above the
+reference itself, so the reference always passes: T1 0.99-1.00,
 T2 0.77-0.83, T3 0.50-0.83, T4 0.71-0.79, T5 0.86-0.92. The evaluation checks these gates on
 every seed of T1-T5, and all pass:
 
@@ -175,7 +176,7 @@ times. Score / pass threshold:
 
 | Task | Seed 0 (3 runs) | Seed 1 | Seed 2 | Seed 3 | Seed 4 | Mean | Below threshold |
 |---|---|---|---|---|---|---|---|
-| T1 | 0.51, 0.76, 0.58 / 1.00 | 0.82 / 1.00 | 0.84 / 0.99 | 0.93 / 1.00 | 0.80 / 1.01 | 0.75 | 7/7 |
+| T1 | 0.51, 0.76, 0.58 / 1.00 | 0.82 / 1.00 | 0.84 / 0.99 | 0.93 / 1.00 | 0.80 / 1.00 | 0.75 | 7/7 |
 | T2 | 0.62, 0.51, 0.33 / 0.82 | 0.25 / 0.83 | 0.67 / 0.77 | 0.11 / 0.79 | 0.06 / 0.80 | 0.36 | 7/7 |
 | T3 | 0.63, **0.94**, 0.64 / 0.80 | **0.56** / 0.50 | **0.86** / 0.70 | 0.45 / 0.50 | 0.23 / 0.83 | 0.62 | 4/7 |
 | T4 | 0.13, 0.15, 0.34 / 0.71 | 0.35 / 0.79 | 0.37 / 0.79 | 0.26 / 0.75 | 0.16 / 0.77 | 0.25 | 7/7 |
@@ -217,7 +218,7 @@ high (`LLM_REASONING_EFFORT=high`; 25 runs). Score / pass threshold:
 
 | Task | Seed 0 | Seed 1 | Seed 2 | Seed 3 | Seed 4 | Mean | Below threshold | Mean, reasoning off |
 |---|---|---|---|---|---|---|---|---|
-| T1 | 0.73 / 1.00 | 0.94 / 1.00 | 0.90 / 0.99 | 0.96 / 1.00 | 0.92 / 1.01 | 0.89 | 5/5 | 0.75 |
+| T1 | 0.73 / 1.00 | 0.94 / 1.00 | 0.90 / 0.99 | 0.96 / 1.00 | 0.92 / 1.00 | 0.89 | 5/5 | 0.75 |
 | T2 | **0.90** / 0.82 | 0.49 / 0.83 | 0.59 / 0.77 | **0.86** / 0.79 | **1.16** / 0.80 | 0.80 | 2/5 | 0.36 |
 | T3 | 0.58 / 0.80 | 0.48 / 0.50 | **0.75** / 0.70 | **0.71** / 0.50 | 0.71 / 0.83 | 0.64 | 3/5 | 0.62 |
 | T4 | 0.43 / 0.71 | 0.42 / 0.79 | 0.21 / 0.79 | 0.35 / 0.75 | 0.34 / 0.77 | 0.35 | 5/5 | 0.25 |
@@ -403,7 +404,7 @@ Python 3.9+; the environment and the evaluation use the standard library only.
 
 ```bash
 python3 -m pharmacy_env.eval                         # everything above (about a minute)
-python3 -m unittest discover tests                   # 27 tests (about a minute and a half)
+python3 -m unittest discover tests                   # 28 tests (about two minutes)
 python3 -m pharmacy_env.anchors --task T5 --seeds 0 1 2 3 4
 python3 -m pharmacy_env.replay results/trajectories/T5_seed0_deepseek-4-1-flash_handover.jsonl
 python3 -m pharmacy_env.analyze results/trajectories/*.jsonl
@@ -412,6 +413,12 @@ python3 -m pharmacy_env.sensitivity                  # penalty weights x0.25 and
 python3 -m pharmacy_env.exploits                     # further shortcut attempts, all tasks and seeds
 python3 -m pharmacy_env.judge --task T1 --seed 0     # reference, do-nothing, stop-early for one seed
 ```
+
+**Harbor.** `harbor/tasks/` holds the five tasks (seed 0) in [Harbor](https://harborframework.com)
+format for the OpenCode harness: the hospital system runs as an MCP sidecar (streamable HTTP), the
+verifier replays the agent's actions on a fresh world and writes `/logs/verifier/reward.json`, and
+the oracle is the reference pharmacist (`PHARMACY_POLICY=do_nothing` or `stop_early` for the two
+baselines). Other seeds: `python3 harbor/make_tasks.py --tasks T1 --seeds 3`. See [harbor/README.md](harbor/README.md).
 
 Judges rerunning the evaluation with their own harness: see [JUDGES.md](JUDGES.md). Besides
 `run_agent` and `run_claude`, the environment can be driven through a Python reset/step interface
@@ -451,6 +458,7 @@ token usage, endpoint and settings.
 | `pharmacy_env/gym_env.py` | Python reset/step interface for any agent harness |
 | `pharmacy_env/mcp_server.py` | MCP server (stdio) exposing the 22 functions |
 | `JUDGES.md` | How to rerun the evaluation with your own harness |
+| `harbor/` | Harbor tasks (T1-T5, seed 0), their generator, verifier and oracle |
 | `pharmacy_env/run_agent.py` | Agent harness for OpenAI-compatible APIs |
 | `pharmacy_env/run_claude.py` | Agent harness for Claude (Anthropic SDK) |
 | `results/trajectories/` | The 121 model runs reported above (35 DeepSeek, 25 DeepSeek with reasoning high, 6 DeepSeek with the hint, 25 Kimi, 15 Qwen3-4B base, 15 Qwen3-4B fine-tuned) |

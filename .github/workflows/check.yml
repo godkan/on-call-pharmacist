@@ -24,6 +24,9 @@ jobs:
         run: python -m unittest discover tests
       - name: Anchors, gates and trajectory replay
         run: python -m pharmacy_env.eval > eval_output.txt; status=$?; tail -n 3 eval_output.txt; exit $status
+      - name: Harbor tasks are generated from the current code
+        if: matrix.python-version == '3.10'
+        run: python harbor/make_tasks.py && git diff --exit-code -- harbor/tasks
       - name: Saved evaluation output is up to date
         if: matrix.python-version == '3.10'
         run: diff eval_output.txt results/eval_output.txt

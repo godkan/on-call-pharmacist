@@ -38,9 +38,10 @@ EXPLOIT_MARGIN = 0.05      # a shortcut must score at least this much below the 
 
 
 def threshold(scores):
-    """Midpoint of the reference and the best other honest anchor on this seed."""
+    """Midpoint of the reference and the best other honest anchor on this seed, never above the
+    reference itself (on the procedure task T1 another honest anchor can edge the reference)."""
     best = sorted((scores[n] for n in HONEST), reverse=True)[:2]
-    return (best[0] + best[1]) / 2
+    return min(scores["careful_pharmacist"], (best[0] + best[1]) / 2)
 
 
 def check_gates(task, rows):

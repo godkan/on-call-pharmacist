@@ -3,6 +3,19 @@
 Python 3.9+, standard library only. Clone, `cd` into the repository, and run the commands from there.
 Tasks are `T1`-`T5`; evaluation seeds are `0`-`4`.
 
+## 0. Harbor (the expected format)
+
+`harbor/tasks/` has T1-T5 (seed 0) as Harbor tasks for the OpenCode harness: the hospital system is
+an MCP sidecar, the verifier writes `/logs/verifier/reward.json`, and the oracle is the reference
+pharmacist. Details, reward keys and the baseline switch: [harbor/README.md](harbor/README.md).
+
+```bash
+harbor run -p harbor/tasks/t1-seed0 -a oracle                        # reference, score 1.00
+harbor run -p harbor/tasks/t1-seed0 -a opencode -m <provider/model>   # agent run
+```
+
+The commands below do the same without Docker.
+
 ## 1. Reference, do-nothing and stop-early runs
 
 ```bash

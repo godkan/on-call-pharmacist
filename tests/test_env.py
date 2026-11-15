@@ -320,6 +320,46 @@ class TestJudgeInterfaces(unittest.TestCase):
         got, want = replay(path)
         self.assertAlmostEqual(got, want)
 
+    def test_harbor_task_oracle_and_verifier_over_http(self):
+        """Generate a Harbor task, serve its sidecar over HTTP in a thread, run solve then verify."""
+        import importlib.util
+        import runpy
+        import socket
+        import sys
+        import threading
+        from pharmacy_env import mcp_server
+        root = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
+        spec = importlib.util.spec_from_file_location("make_tasks", os.path.join(root, "harbor", "make_tasks.py"))
+        make_tasks = importlib.util.module_from_spec(spec)
+        spec.loader.exec_module(make_tasks)
+        tmp = tempfile.mkdtemp()
+        task_dir = make_tasks.make_task("T2", 1, tmp)
+        for f in ("task.toml", "instruction.md", "environment/docker-compose.yaml", "tests/test.sh",
+                  "solution/solve.sh", "environment/mcp-server/pharmacy_env/engine.py"):
+            self.assertTrue(os.path.exists(os.path.join(task_dir, f)), f)
+        with socket.socket() as s:
+            s.bind(("127.0.0.1", 0))
+            port = s.getsockname()[1]
+        server = mcp_server.Server("T2", 1, os.path.join(tmp, "side.jsonl"))
+        threading.Thread(target=mcp_server.serve_http, args=(server, port, "127.0.0.1"), daemon=True).start()
+        for part in ("solution", "tests"):
+            with open(os.path.join(task_dir, part, "config.json"), "w") as f:
+                json.dump({"task": "T2", "seed": 1, "mcp_url": "http://127.0.0.1:%d" % port}, f)
+        os.environ["PHARMACY_VERIFIER_DIR"] = os.path.join(tmp, "logs")
+        saved = list(sys.path)
+        try:
+            runpy.run_path(os.path.join(task_dir, "solution", "oracle.py"), run_name="__main__")
+            runpy.run_path(os.path.join(task_dir, "tests", "verify.py"), run_name="__main__")
+        finally:
+            sys.path[:] = saved
+            del os.environ["PHARMACY_VERIFIER_DIR"]
+        with open(os.path.join(tmp, "logs", "reward.json")) as f:
+            reward = json.load(f)
+        self.assertAlmostEqual(reward["score"], 1.0)
+        self.assertEqual(reward["passed"], 1.0)
+        got, want = replay(os.path.join(tmp, "logs", "trajectory.jsonl"))
+        self.assertAlmostEqual(got, want)
+
     def test_malformed_arguments_never_crash(self):
         env = Env(TASKS["T5"](0))
         bad = [("place_urgent_order", {"product_code": "EPI-1MG", "qty": "lots"}),
